@@ -1,8 +1,7 @@
 #include <algorithm> // copy
-#include <chrono>
 #include <iomanip>
+#include <memory>    // unique_ptr
 #include <sstream>
-#include <vector>
 
 #include <boost/asio/connect.hpp>
 #include <boost/asio/read_until.hpp>
@@ -27,10 +26,7 @@ static constexpr auto space = " ";
 
 // Telegram delimiters.
 static constexpr auto frame_start = char{0x02};
-static constexpr auto frame_end = char{0x03};
-
-///// @todo Make this configurable
-//static constexpr auto timeout = std::chrono::seconds{2};
+static constexpr auto frame_end   = char{0x03};
 
 /*------------------------------------------------------------------------------------------------*/
 
@@ -132,70 +128,6 @@ LMS1xx::read()
 {
   m_buffer.consume(m_buffer.size()); // reset buffer
   boost::asio::read_until(m_socket, m_buffer, frame_end);
-
-//  auto deadline_reached = false;
-//  auto socket_read = false;
-//  auto read_ec = boost::system::error_code{};
-//  auto timer_ec = boost::system::error_code{};
-//
-//  m_timer.expires_from_now(timeout);
-//  m_timer.async_wait([&](const boost::system::error_code& e)
-//                     {
-//                       if (e != boost::asio::error::operation_aborted)
-//                       {
-//                         deadline_reached = true;
-//                       }
-//                       timer_ec = e;
-//                     });
-//
-//  boost::asio::async_read_until( m_socket, m_buffer, frame_end
-//                               , [&](const boost::system::error_code& e, std::size_t)
-//                                 {
-//                                   socket_read = true;
-//                                   read_ec = e;
-//                                 });
-//
-//  while (m_io.run_one())
-//  {
-//    if (timer_ec == boost::asio::error::operation_aborted)
-//    {
-//      timer_ec = boost::system::error_code{};
-//      continue;
-//    }
-//
-//    if (read_ec)
-//    {
-//      throw read_ec;
-//    }
-//
-//    if (timer_ec)
-//    {
-//      throw timer_ec;
-//    }
-//
-//    if (deadline_reached)
-//    {
-//      throw std::runtime_error{"Timeout"};
-//    }
-//    else
-//    {
-//      m_timer.expires_from_now(timeout);
-//      m_timer.async_wait([&](const boost::system::error_code& e)
-//                         {
-//                           if (e != boost::asio::error::operation_aborted)
-//                           {
-//                             deadline_reached = true;
-//                           }
-//                           timer_ec = e;
-//                         });
-//    }
-//
-//    if (socket_read)
-//    {
-//      break;
-//    }
-//  }
-
   if (*std::istreambuf_iterator<char>{&m_buffer} != frame_start)
   {
     throw std::runtime_error{"Invalid telegram"};
@@ -328,6 +260,8 @@ boost::optional<scanData>
 LMS1xx::getData()
 {
   read();
+
+  /// @todo Directly read from the streambuf
   const auto sz = m_buffer.size();
   auto buf = std::unique_ptr<char[]>(new char[sz]);
   std::copy(std::istreambuf_iterator<char>{&m_buffer}, std::istreambuf_iterator<char>{}, buf.get());
