@@ -16,64 +16,66 @@ main()
   cc.deviceName = false;
   cc.outputInterval = 1;
 
-  lms1xx::LMS1xx laser{"192.168.0.1", "2111"};
-
-  if (not laser.connected())
-	{
-		return 1;
-	}
-
-	laser.login();
-
-  laser.set_scan_data_configuration(cc);
-
-  laser.start_measurements();
-
-  while (laser.status() != lms1xx::device_status::ready_for_measurement)
-	{
-    std::cout << "Waiting for device\n";
-    std::this_thread::sleep_for(std::chrono::seconds{1});
-	}
-
-  laser.start_device();
-	laser.scan_continous(true);
-
-  for (auto i = 0ul; i < 9999999999; ++i)
+  try
   {
-    try
+    lms1xx::LMS1xx laser{"192.168.0.1", "2111"};
+    laser.login();
+
+    laser.set_scan_data_configuration(cc);
+
+    laser.start_measurements();
+
+    while (laser.status() != lms1xx::device_status::ready_for_measurement)
     {
-      if (const auto data_opt = laser.getData())
+      std::cout << "Waiting for device\n";
+      std::this_thread::sleep_for(std::chrono::seconds{1});
+    }
+
+    laser.start_device();
+    laser.scan_continous(true);
+
+    for (auto i = 0ul; i < 9999999999; ++i)
+    {
+      try
       {
-        const auto& data = *data_opt;
-        // std::cout << data.dist_len1 << " " << data.rssi_len1 <<  '\n';
-
-        auto range = 0.0;
-        for (int i = 0; i < data.dist_len1; i++)
+        if (const auto data_opt = laser.getData())
         {
-          // scan_msg.ranges[i] = data.dist1[i] * 0.001;
-          // std::cout << data.dist1[i] * 0.001 << '\n';
-          range += data.dist1[i] * 0.001;
-        }
+          const auto& data = *data_opt;
+          // std::cout << data.dist_len1 << " " << data.rssi_len1 <<  '\n';
 
-        auto inten = uint16_t{};
-        for (int i = 0; i < data.rssi_len1; i++)
-        {
-          // scan_msg.intensities[i] = data.rssi1[i];
-          // std::cout << data.rssi1[i] << '\n';
-          inten += data.rssi1[i];
+          auto range = 0.0;
+          for (int i = 0; i < data.dist_len1; i++)
+          {
+            // scan_msg.ranges[i] = data.dist1[i] * 0.001;
+            // std::cout << data.dist1[i] * 0.001 << '\n';
+            range += data.dist1[i] * 0.001;
+          }
+
+          auto inten = uint16_t{};
+          for (int i = 0; i < data.rssi_len1; i++)
+          {
+            // scan_msg.intensities[i] = data.rssi1[i];
+            // std::cout << data.rssi1[i] << '\n';
+            inten += data.rssi1[i];
+          }
+          std::cout << range << "  " << inten << std::endl;
         }
-        std::cout << range << "  " << inten << std::endl;
+      }
+      catch (const std::runtime_error& e)
+      {
+        std::cerr << e.what() << '\n';
       }
     }
-    catch (const std::runtime_error& e)
-    {
-      std::cerr << e.what() << '\n';
-    }
+    
+    laser.login();
+    laser.stop_measurements();
+    laser.scan_continous(false);
   }
-
-	laser.login();
-  laser.stop_measurements();
-  laser.scan_continous(false);
+  catch (const std::exception& e)
+  {
+    std::cerr << "An error happened: " << e.what() << '\n';
+    return 1;
+  }
 
 	return 0;
 }
