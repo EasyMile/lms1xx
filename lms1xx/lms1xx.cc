@@ -18,8 +18,8 @@ namespace /* unnamed */ {
 // To ignore some values when parsing an istream.
 static auto _ = std::string{};
 
-// 1MB of buffer for incoming data.
-static constexpr auto maximal_buffer_size = 1048576ul;
+// 256 kB of buffer for incoming data.
+static constexpr auto maximal_buffer_size = 262144ul;
 
 // Separator of ASCII commands.
 static constexpr auto space = " ";
@@ -68,7 +68,7 @@ LMS1xx::LMS1xx()
   , m_timer{m_io}
   , m_connected{false}
 {
-  m_buffer.prepare(262144); // reserve 256 kB
+  m_buffer.prepare(131072); // reserve 128 kB
 }
 
 /*------------------------------------------------------------------------------------------------*/
