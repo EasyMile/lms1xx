@@ -21,11 +21,16 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef LMS1XX_H_
-#define LMS1XX_H_
+#pragma once
 
+#include <cstdint>
 #include <string>
-#include <stdint.h>
+
+#include <boost/optional.hpp>
+
+namespace lms1xx {
+
+/*------------------------------------------------------------------------------------------------*/
 
 /*!
 * @class scanCfg
@@ -33,7 +38,8 @@
 *
 * @author Konrad Banachowicz
 */
-typedef struct _scanCfg {
+struct scanCfg
+{
 	/*!
 	 * @brief Scanning frequency.
 	 * 1/100 Hz
@@ -57,7 +63,9 @@ typedef struct _scanCfg {
 	 * 1/10000 degree
 	 */
 	int stopAngle;
-} scanCfg;
+};
+
+/*------------------------------------------------------------------------------------------------*/
 
 /*!
 * @class scanDataCfg
@@ -65,8 +73,8 @@ typedef struct _scanCfg {
 *
 * @author Konrad Banachowicz
 */
-typedef struct _scanDataCfg {
-
+struct scanDataCfg
+{
 	/*!
 	 * @brief Output channels.
 	 * Defines which output channel is activated.
@@ -115,7 +123,9 @@ typedef struct _scanDataCfg {
 	 * 50000 every 50000th scan
 	 */
 	int outputInterval;
-} scanDataCfg;
+};
+
+/*------------------------------------------------------------------------------------------------*/
 
 /*!
 * @class scanData
@@ -123,7 +133,8 @@ typedef struct _scanDataCfg {
 *
 * @author Konrad Banachowicz
 */
-typedef struct _scanData {
+struct scanData
+{
 
 	/*!
 	 * @brief Number of samples in dist1.
@@ -172,9 +183,12 @@ typedef struct _scanData {
 	 *
 	 */
 	uint16_t rssi2[1082];
-} scanData;
+};
 
-typedef enum {
+/*------------------------------------------------------------------------------------------------*/
+
+enum class status
+{
 	undefined = 0,
 	initialisation = 1,
 	configuration = 2,
@@ -183,7 +197,9 @@ typedef enum {
 	in_preparation = 5,
 	ready = 6,
 	ready_for_measurement = 7
-} status_t;
+};
+
+/*------------------------------------------------------------------------------------------------*/
 
 /*!
 * @class LMS1xx
@@ -192,17 +208,21 @@ typedef enum {
 * @author Konrad Banachowicz
 */
 
-class LMS1xx {
+class LMS1xx final
+{
+
 public:
-	LMS1xx();
-	virtual ~LMS1xx();
+
+  LMS1xx();
+
+  ~LMS1xx();
 
 	/*!
 	* @brief Connect to LMS1xx.
 	* @param host LMS1xx host name or ip address.
 	* @param port LMS1xx port number.
 	*/
-	void connect(std::string host, int port = 2111);
+	void connect(std::string host, unsigned short port);
 
 	/*!
 	* @brief Disconnect from LMS1xx device.
@@ -213,7 +233,7 @@ public:
 	* @brief Get status of connection.
 	* @returns connected or not.
 	*/
-	bool isConnected();
+	bool isConnected() const noexcept;
 
 	/*!
 	* @brief Start measurements.
@@ -231,7 +251,7 @@ public:
 	* @brief Get current status of LMS1xx device.
 	* @returns status of LMS1xx device.
 	*/
-	status_t queryStatus();
+	status queryStatus();
 
 	/*!
 	* @brief Log into LMS1xx unit.
@@ -273,14 +293,14 @@ public:
 	* After reception of this command device start or stop continuous data stream containing scan messages.
 	* @param start 1 : start 0 : stop
 	*/
-	void scanContinous(int start);
+	void scanContinous(bool start);
 
 	/*!
 	* @brief Receive single scan message.
 	*
 	* @param data pointer to scanData buffer structure.
 	*/
-	void getData(scanData& data);
+	boost::optional<scanData> getData();
 
 	/*!
 	* @brief Save data permanently.
@@ -296,10 +316,10 @@ public:
 	void startDevice();
 
 private:
-	bool connected;
-	bool debug;
+
+  bool connected;
 
 	int sockDesc;
 };
 
-#endif /* LMS1XX_H_ */
+} // namespace lms1xx

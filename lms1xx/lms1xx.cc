@@ -30,21 +30,27 @@
 #include <cstring>
 #include <unistd.h>
 
-#include "LMS1xx.h"
+#include "lms1xx/lms1xx.hh"
 
-LMS1xx::LMS1xx() :
-	connected(false) {
-	debug = false;
+namespace lms1xx {
+
+LMS1xx::LMS1xx()
+  : connected{false}
+{}
+
+LMS1xx::~LMS1xx()
+{
+  disconnect();
 }
 
-LMS1xx::~LMS1xx() {
-
-}
-
-void LMS1xx::connect(std::string host, int port) {
-	if (!connected) {
+void
+LMS1xx::connect(std::string host, unsigned short port)
+{
+	if (!connected)
+  {
 		sockDesc = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-		if (sockDesc) {
+		if (sockDesc)
+    {
 			struct sockaddr_in stSockAddr;
 			int Res;
 			stSockAddr.sin_family = PF_INET;
@@ -60,18 +66,26 @@ void LMS1xx::connect(std::string host, int port) {
 	}
 }
 
-void LMS1xx::disconnect() {
-	if (connected) {
+void
+LMS1xx::disconnect()
+{
+	if (connected)
+  {
 		close(sockDesc);
 		connected = false;
 	}
 }
 
-bool LMS1xx::isConnected() {
+bool
+LMS1xx::isConnected()
+const noexcept
+{
 	return connected;
 }
 
-void LMS1xx::startMeas() {
+void
+LMS1xx::startMeas()
+{
 	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sMN LMCstartmeas", 0x03);
 
@@ -86,7 +100,9 @@ void LMS1xx::startMeas() {
 	//	}
 }
 
-void LMS1xx::stopMeas() {
+void
+LMS1xx::stopMeas()
+{
 	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sMN LMCstopmeas", 0x03);
 
@@ -101,7 +117,9 @@ void LMS1xx::stopMeas() {
 	//	}
 }
 
-status_t LMS1xx::queryStatus() {
+status
+LMS1xx::queryStatus()
+{
 	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sRN STlms", 0x03);
 
@@ -117,10 +135,13 @@ status_t LMS1xx::queryStatus() {
 	int ret;
 	sscanf((buf + 10), "%d", &ret);
 
-	return (status_t) ret;
+//	return (status_t) ret;
+  return static_cast<status>(ret);
 }
 
-void LMS1xx::login() {
+void
+LMS1xx::login()
+{
 	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sMN SetAccessMode 03 F4724744", 0x03);
 
@@ -135,7 +156,10 @@ void LMS1xx::login() {
 	//	}
 }
 
-scanCfg LMS1xx::getScanCfg() const {
+scanCfg
+LMS1xx::getScanCfg()
+const
+{
 	scanCfg cfg;
 	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sRN LMPscancfg", 0x03);
@@ -155,7 +179,9 @@ scanCfg LMS1xx::getScanCfg() const {
 	return cfg;
 }
 
-void LMS1xx::setScanCfg(const scanCfg &cfg) {
+void
+LMS1xx::setScanCfg(const scanCfg &cfg)
+{
 	char buf[100];
 	sprintf(buf, "%c%s %X +1 %X %X %X%c", 0x02, "sMN mLMPsetscancfg",
 			cfg.scaningFrequency, cfg.angleResolution, cfg.startAngle,
@@ -174,17 +200,17 @@ void LMS1xx::setScanDataCfg(const scanDataCfg &cfg) {
 			"sWN LMDscandatacfg", cfg.outputChannel, cfg.remission ? 1 : 0,
 			cfg.resolution, cfg.encoder, cfg.position ? 1 : 0,
 			cfg.deviceName ? 1 : 0, cfg.timestamp ? 1 : 0, cfg.outputInterval, 0x03);
-	if(debug)
-		printf("%s\n", buf);
 	write(sockDesc, buf, strlen(buf));
 
 	int len = read(sockDesc, buf, 100);
 	buf[len - 1] = 0;
 }
 
-void LMS1xx::scanContinous(int start) {
+void
+LMS1xx::scanContinous(bool start)
+{
 	char buf[100];
-	sprintf(buf, "%c%s %d%c", 0x02, "sEN LMDscandata", start, 0x03);
+  sprintf(buf, "%c%s %d%c", 0x02, "sEN LMDscandata", start ? 1 : 0, 0x03);
 
 	write(sockDesc, buf, strlen(buf));
 
@@ -193,18 +219,17 @@ void LMS1xx::scanContinous(int start) {
 	if (buf[0] != 0x02)
 		printf("invalid packet recieved\n");
 
-	if (debug) {
-		buf[len] = 0;
-		printf("%s\n", buf);
-	}
-
 	if (start = 0) {
 		for (int i = 0; i < 10; i++)
 			read(sockDesc, buf, 100);
 	}
 }
 
-void LMS1xx::getData(scanData& data) {
+boost::optional<scanData>
+LMS1xx::getData()
+{
+  auto data = scanData{};
+
 	char buf[20000];
 	fd_set rfds;
 	struct timeval tv;
@@ -255,9 +280,9 @@ void LMS1xx::getData(scanData& data) {
 	tok = strtok(NULL, " "); //NumberChannels16Bit
 	int NumberChannels16Bit;
 	sscanf(tok, "%d", &NumberChannels16Bit);
-	if (debug)
-		printf("NumberChannels16Bit : %d\n", NumberChannels16Bit);
-	for (int i = 0; i < NumberChannels16Bit; i++) {
+
+  for (int i = 0; i < NumberChannels16Bit; i++)
+  {
 		int type = -1; // 0 DIST1 1 DIST2 2 RSSI1 3 RSSI2
 		char content[6];
 		tok = strtok(NULL, " "); //MeasuredDataContent
@@ -278,9 +303,6 @@ void LMS1xx::getData(scanData& data) {
 		tok = strtok(NULL, " "); //NumberData
 		int NumberData;
 		sscanf(tok, "%X", &NumberData);
-
-		if (debug)
-			printf("NumberData : %d\n", NumberData);
 
 		if (type == 0) {
 			data.dist_len1 = NumberData;
@@ -313,9 +335,8 @@ void LMS1xx::getData(scanData& data) {
 	tok = strtok(NULL, " "); //NumberChannels8Bit
 	int NumberChannels8Bit;
 	sscanf(tok, "%d", &NumberChannels8Bit);
-	if (debug)
-		printf("NumberChannels8Bit : %d\n", NumberChannels8Bit);
-	for (int i = 0; i < NumberChannels8Bit; i++) {
+
+  for (int i = 0; i < NumberChannels8Bit; i++) {
 		int type = -1;
 		char content[6];
 		tok = strtok(NULL, " "); //MeasuredDataContent
@@ -336,9 +357,6 @@ void LMS1xx::getData(scanData& data) {
 		tok = strtok(NULL, " "); //NumberData
 		int NumberData;
 		sscanf(tok, "%X", &NumberData);
-
-		if (debug)
-			printf("NumberData : %d\n", NumberData);
 
 		if (type == 0) {
 			data.dist_len1 = NumberData;
@@ -366,9 +384,12 @@ void LMS1xx::getData(scanData& data) {
 		}
 	}
 
+  return data;
 }
 
-void LMS1xx::saveConfig() {
+void
+LMS1xx::saveConfig()
+{
 	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sMN mEEwriteall", 0x03);
 
@@ -383,7 +404,9 @@ void LMS1xx::saveConfig() {
 	//	}
 }
 
-void LMS1xx::startDevice() {
+void
+LMS1xx::startDevice()
+{
 	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sMN Run", 0x03);
 
@@ -397,3 +420,5 @@ void LMS1xx::startDevice() {
 	//		std::cout << buf << std::endl;
 	//	}
 }
+
+} // namespace lms1xx

@@ -21,38 +21,36 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "LMS1xx.h"
-
+#include <chrono>
 #include <iostream>
+#include <thread>
+
+#include "lms1xx/lms1xx.hh"
+
 
 int main()
 {
-	LMS1xx laser;
-	scanData data;
+  using namespace lms1xx;
 
-	laser.connect("192.168.1.2");
-	if(!laser.isConnected())
+  auto laser = LMS1xx{};
+
+	laser.connect("192.168.0.1", 2111);
+
+  if(not laser.isConnected())
 	{
-		std::cout << "connection failend" << std::endl;
 		return 0;
 	}
 
-	std::cout << "Connected to laser" << std::endl;
-
-	std::cout << "Loging in ..." << std::endl;
 	laser.login();
 
 	laser.stopMeas();
 
-	std::cout << "Geting scan configuration ..." << ::std::endl;
-	scanCfg c = laser.getScanCfg();
+	auto conf = laser.getScanCfg();
 
-	//std::cout << "Scanning Frequency : " << c.scaningFrequency/100.0 << "Hz AngleResolution : " << c.angleResolution/10000.0 << "deg " << std::endl;
+	conf.angleResolution = 5000;
+	conf.scaningFrequency = 5000;
 
-	c.angleResolution = 5000;
-	c.scaningFrequency = 5000;
-
-	laser.setScanCfg(c);
+	laser.setScanCfg(conf);
 
 	scanDataCfg cc;
 	cc.deviceName = false;
@@ -65,35 +63,22 @@ int main()
 
 	laser.setScanDataCfg(cc);
 
-	int ret = 0;
-	std::cout << "Start measurements ..." << std::endl;
 	laser.startMeas();
 
-	std::cout << "Wait for ready status ..." << std::endl;
-	ret = 0;
-	while (ret != 7)
+  while (laser.queryStatus() != status::ready_for_measurement)
 	{
-		ret = laser.queryStatus();
-		std::cout << "status : " << ret << std::endl;
-		sleep(1);
-	}
-	std::cout << "Laser ready" << std::endl;
-
-	std::cout << "Start continuous data transmission ..." << std::endl;
-	laser.scanContinous(1);
-
-	for(int i =0; i < 3; i++)
-	{
-		std::cout << "Receive data sample ..." << std::endl;
-		laser.getData(data);
+    std::this_thread::sleep_for(std::chrono::seconds{1});
 	}
 
-	std::cout << "Stop continuous data transmission ..." << std::endl;
-	laser.scanContinous(0);
+	laser.scanContinous(true);
 
+	for(auto i = 0; i < 3; ++i)
+	{
+		const auto data = laser.getData();
+	}
+
+	laser.scanContinous(false);
 	laser.stopMeas();
-
-	std::cout << "Disconnect from laser" << std::endl;
 	laser.disconnect();
 
 	return 0;
