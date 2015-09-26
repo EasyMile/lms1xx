@@ -3,8 +3,8 @@
 #include <cstdint>
 #include <string>
 
+#include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/io_service.hpp>
-#include <boost/asio/steady_timer.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/optional.hpp>
@@ -125,6 +125,18 @@ enum class device_status
 
 /*------------------------------------------------------------------------------------------------*/
 
+class invalid_telegram_error final
+  : public std::exception
+{};
+
+/*------------------------------------------------------------------------------------------------*/
+
+class timeout_error final
+  : public std::exception
+{};
+
+/*------------------------------------------------------------------------------------------------*/
+
 /// @brief Class responsible for communicating with LMS1xx device.
 class LMS1xx final
 {
@@ -143,10 +155,11 @@ public:
   LMS1xx& operator=(LMS1xx&&) = default;
 
   /// @brief Default constructor
-  LMS1xx();
+  LMS1xx(const boost::posix_time::time_duration& timeout = boost::posix_time::seconds{30});
 
   /// @brief Construct that connects to a given device
-  LMS1xx(const std::string& host, const std::string& port);
+  LMS1xx( const std::string& host, const std::string& port
+        , const boost::posix_time::time_duration& timeout = boost::posix_time::seconds{30});
 
   /// @brief Destructor.
   ///
@@ -251,6 +264,9 @@ private:
   void
   write(const char* telegram, std::size_t len);
 
+  void
+  check_timer();
+
 private:
 
   /// @brief Manage I/O
@@ -263,10 +279,13 @@ private:
   boost::asio::streambuf m_buffer;
 
   /// @brief Track timeouts
-  boost::asio::steady_timer m_timer;
+  boost::asio::deadline_timer m_timer;
 
   /// @brief True if the device is connected
   bool m_connected;
+
+  /// @brief Time to wait before throwing a timeout exception
+  boost::posix_time::time_duration m_timeout;
 };
 
 /*------------------------------------------------------------------------------------------------*/

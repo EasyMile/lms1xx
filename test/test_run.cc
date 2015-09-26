@@ -18,7 +18,7 @@ main()
 
   try
   {
-    lms1xx::LMS1xx laser{"192.168.0.1", "2111"};
+    lms1xx::LMS1xx laser{"192.168.0.1", "2111", boost::posix_time::seconds{30}};
     laser.login();
 
     laser.set_scan_data_configuration(cc);
@@ -34,7 +34,7 @@ main()
     laser.start_device();
     laser.scan_continous(true);
 
-    for (auto i = 0ul; i < 9999999999; ++i)
+    for (auto i = 0ul; i < 999; ++i)
     {
       try
       {
@@ -61,15 +61,19 @@ main()
           std::cout << range << "  " << inten << std::endl;
         }
       }
-      catch (const std::runtime_error& e)
+      catch (const lms1xx::invalid_telegram_error&)
       {
-        std::cerr << e.what() << '\n';
+        std::cerr << "Invalid telegram, retrying.";
       }
     }
-    
+
     laser.login();
     laser.stop_measurements();
     laser.scan_continous(false);
+  }
+  catch (const lms1xx::timeout_error&)
+  {
+    std::cout << "Connection lost after 30s\n";
   }
   catch (const std::exception& e)
   {

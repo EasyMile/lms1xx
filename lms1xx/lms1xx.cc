@@ -1,6 +1,6 @@
-#include <algorithm> // copy
+#include <algorithm>     // copy
 #include <iomanip>
-#include <memory>    // unique_ptr
+#include <memory>        // unique_ptr
 #include <sstream>
 
 #include <boost/asio/connect.hpp>
@@ -61,20 +61,24 @@ build(Args&&... args)
 
 /*------------------------------------------------------------------------------------------------*/
 
-LMS1xx::LMS1xx()
+LMS1xx::LMS1xx(const boost::posix_time::time_duration& timeout)
   : m_io{}
   , m_socket{m_io}
   , m_buffer(maximal_buffer_size)
   , m_timer{m_io}
   , m_connected{false}
+  , m_timeout{timeout}
 {
   m_buffer.prepare(131072); // reserve 128 kB
+  m_timer.expires_at(boost::posix_time::pos_infin);
+  check_timer();
 }
 
 /*------------------------------------------------------------------------------------------------*/
 
-LMS1xx::LMS1xx(const std::string& host, const std::string& port)
-  : LMS1xx::LMS1xx{}
+LMS1xx::LMS1xx( const std::string& host, const std::string& port
+              , const boost::posix_time::time_duration& timeout)
+  : LMS1xx::LMS1xx{timeout}
 {
   connect(host, port);
 }
@@ -94,7 +98,6 @@ LMS1xx::connect(const std::string& host, const std::string& port)
 	if (not m_connected)
   {
     boost::asio::ip::tcp::resolver resolver{m_io};
-    /// @todo Check if sucessful or not
     boost::asio::connect(m_socket, resolver.resolve({host, port}));
     m_connected = true;
 	}
@@ -124,13 +127,47 @@ const noexcept
 /*------------------------------------------------------------------------------------------------*/
 
 void
+LMS1xx::check_timer()
+{
+  if (m_timer.expires_at() <= boost::asio::deadline_timer::traits_type::now())
+  {
+    auto ignored_ec = boost::system::error_code{};
+    m_socket.close(ignored_ec);
+    m_connected = false;
+    m_timer.expires_at(boost::posix_time::pos_infin);
+    throw timeout_error{};
+  }
+
+  m_timer.async_wait([this](const boost::system::error_code&)
+                     {
+                       check_timer();
+                     });
+}
+
+/*------------------------------------------------------------------------------------------------*/
+
+void
 LMS1xx::read()
 {
   m_buffer.consume(m_buffer.size()); // reset buffer
-  boost::asio::read_until(m_socket, m_buffer, frame_end);
+
+  m_timer.expires_from_now(m_timeout);
+  auto ec = boost::system::error_code{boost::asio::error::would_block};
+  boost::asio::async_read_until( m_socket, m_buffer, frame_end
+                               , [&](const boost::system::error_code& e, std::size_t)
+                                 {
+                                   ec = e;
+                                 });
+
+  do
+  {
+    m_io.run_one();
+  }
+  while (ec == boost::asio::error::would_block);
+
   if (*std::istreambuf_iterator<char>{&m_buffer} != frame_start)
   {
-    throw std::runtime_error{"Invalid telegram"};
+    throw invalid_telegram_error{};
   }
 }
 
