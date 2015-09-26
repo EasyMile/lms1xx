@@ -1,49 +1,84 @@
-/*
- * LMS1xx.cpp
- *
- *  Created on: 09-08-2010
- *  Author: Konrad Banachowicz
- ***************************************************************************
- *   This library is free software; you can redistribute it and/or         *
- *   modify it under the terms of the GNU Lesser General Public            *
- *   License as published by the Free Software Foundation; either          *
- *   version 2.1 of the License, or (at your option) any later version.    *
- *                                                                         *
- *   This library is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU     *
- *   Lesser General Public License for more details.                       *
- *                                                                         *
- *   You should have received a copy of the GNU Lesser General Public      *
- *   License along with this library; if not, write to the Free Software   *
- *   Foundation, Inc., 59 Temple Place,                                    *
- *   Suite 330, Boston, MA  02111-1307  USA                                *
- *                                                                         *
- ***************************************************************************/
+#include <algorithm> // copy
+#include <chrono>
+#include <iomanip>
+#include <sstream>
+#include <vector>
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <unistd.h>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/read_until.hpp>
+#include <boost/asio/write.hpp>
 
 #include "lms1xx/lms1xx.hh"
 
 namespace lms1xx {
 
+namespace /* unnamed */ {
+
+/*------------------------------------------------------------------------------------------------*/
+
+// To ignore some values when parsing an istream.
+static auto _ = std::string{};
+
+// 1MB of buffer for incoming data.
+static constexpr auto maximal_buffer_size = 1048576ul;
+
+// Separator of ASCII commands.
+static constexpr auto space = " ";
+
+// Telegram delimiters.
+static constexpr auto frame_start = char{0x02};
+static constexpr auto frame_end = char{0x03};
+
+///// @todo Make this configurable
+//static constexpr auto timeout = std::chrono::seconds{2};
+
+/*------------------------------------------------------------------------------------------------*/
+
+inline
+void
+build_telegram_impl(std::stringstream& ss)
+{
+  ss << frame_end;
+}
+
+template <typename Arg, typename... Args>
+void
+build_telegram_impl(std::stringstream& ss, Arg&& arg, Args&&... args)
+{
+  ss << arg;
+  build_telegram_impl(ss, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+std::string
+build(Args&&... args)
+{
+  std::stringstream ss;
+  ss << frame_start;
+  build_telegram_impl(ss, std::forward<Args>(args)...);
+  return ss.str();
+}
+
+/*------------------------------------------------------------------------------------------------*/
+
+} // namespace unnamed
+
 /*------------------------------------------------------------------------------------------------*/
 
 LMS1xx::LMS1xx()
-  : m_connected{false}
-{}
+  : m_io{}
+  , m_socket{m_io}
+  , m_buffer(maximal_buffer_size)
+  , m_timer{m_io}
+  , m_connected{false}
+{
+  m_buffer.prepare(262144); // reserve 256 kB
+}
 
 /*------------------------------------------------------------------------------------------------*/
 
-LMS1xx::LMS1xx(const std::string& host, unsigned short port)
-  : m_connected{false}
+LMS1xx::LMS1xx(const std::string& host, const std::string& port)
+  : LMS1xx::LMS1xx{}
 {
   connect(host, port);
 }
@@ -58,25 +93,14 @@ LMS1xx::~LMS1xx()
 /*------------------------------------------------------------------------------------------------*/
 
 void
-LMS1xx::connect(const std::string& host, unsigned short port)
+LMS1xx::connect(const std::string& host, const std::string& port)
 {
 	if (not m_connected)
   {
-		sockDesc = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-		if (sockDesc)
-    {
-			struct sockaddr_in stSockAddr;
-			int Res;
-			stSockAddr.sin_family = PF_INET;
-			stSockAddr.sin_port = htons(port);
-			Res = inet_pton(AF_INET, host.c_str(), &stSockAddr.sin_addr);
-
-			int ret = ::connect(sockDesc, (struct sockaddr *) &stSockAddr, sizeof stSockAddr);
-			if (ret == 0)
-      {
-				m_connected = true;
-			}
-		}
+    boost::asio::ip::tcp::resolver resolver{m_io};
+    /// @todo Check if sucessful or not
+    boost::asio::connect(m_socket, resolver.resolve({host, port}));
+    m_connected = true;
 	}
 }
 
@@ -87,7 +111,7 @@ LMS1xx::disconnect()
 {
 	if (m_connected)
   {
-		close(sockDesc);
+		m_socket.close();
 		m_connected = false;
 	}
 }
@@ -104,20 +128,103 @@ const noexcept
 /*------------------------------------------------------------------------------------------------*/
 
 void
+LMS1xx::read()
+{
+  m_buffer.consume(m_buffer.size()); // reset buffer
+  boost::asio::read_until(m_socket, m_buffer, frame_end);
+
+//  auto deadline_reached = false;
+//  auto socket_read = false;
+//  auto read_ec = boost::system::error_code{};
+//  auto timer_ec = boost::system::error_code{};
+//
+//  m_timer.expires_from_now(timeout);
+//  m_timer.async_wait([&](const boost::system::error_code& e)
+//                     {
+//                       if (e != boost::asio::error::operation_aborted)
+//                       {
+//                         deadline_reached = true;
+//                       }
+//                       timer_ec = e;
+//                     });
+//
+//  boost::asio::async_read_until( m_socket, m_buffer, frame_end
+//                               , [&](const boost::system::error_code& e, std::size_t)
+//                                 {
+//                                   socket_read = true;
+//                                   read_ec = e;
+//                                 });
+//
+//  while (m_io.run_one())
+//  {
+//    if (timer_ec == boost::asio::error::operation_aborted)
+//    {
+//      timer_ec = boost::system::error_code{};
+//      continue;
+//    }
+//
+//    if (read_ec)
+//    {
+//      throw read_ec;
+//    }
+//
+//    if (timer_ec)
+//    {
+//      throw timer_ec;
+//    }
+//
+//    if (deadline_reached)
+//    {
+//      throw std::runtime_error{"Timeout"};
+//    }
+//    else
+//    {
+//      m_timer.expires_from_now(timeout);
+//      m_timer.async_wait([&](const boost::system::error_code& e)
+//                         {
+//                           if (e != boost::asio::error::operation_aborted)
+//                           {
+//                             deadline_reached = true;
+//                           }
+//                           timer_ec = e;
+//                         });
+//    }
+//
+//    if (socket_read)
+//    {
+//      break;
+//    }
+//  }
+
+  if (*std::istreambuf_iterator<char>{&m_buffer} != frame_start)
+  {
+    throw std::runtime_error{"Invalid telegram"};
+  }
+}
+
+/*------------------------------------------------------------------------------------------------*/
+
+void
+LMS1xx::write(const std::string& telegram)
+{
+  boost::asio::write(m_socket, boost::asio::buffer(telegram));
+}
+
+/*------------------------------------------------------------------------------------------------*/
+
+void
+LMS1xx::write(const char* telegram, std::size_t len)
+{
+  boost::asio::write(m_socket, boost::asio::buffer(telegram, len));
+}
+
+/*------------------------------------------------------------------------------------------------*/
+
+void
 LMS1xx::start_measurements()
 {
-	char buf[100];
-	sprintf(buf, "%c%s%c", 0x02, "sMN LMCstartmeas", 0x03);
-
-	write(sockDesc, buf, strlen(buf));
-
-	int len = read(sockDesc, buf, 100);
-	//	if (buf[0] != 0x02)
-	//		std::cout << "invalid packet recieved" << std::endl;
-	//	if (debug) {
-	//		buf[len] = 0;
-	//		std::cout << buf << std::endl;
-	//	}
+  write(build("sMN", space, "LMCstartmeas"));
+  read();
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -125,18 +232,8 @@ LMS1xx::start_measurements()
 void
 LMS1xx::stop_measurements()
 {
-	char buf[100];
-	sprintf(buf, "%c%s%c", 0x02, "sMN LMCstopmeas", 0x03);
-
-	write(sockDesc, buf, strlen(buf));
-
-	int len = read(sockDesc, buf, 100);
-	//	if (buf[0] != 0x02)
-	//		std::cout << "invalid packet recieved" << std::endl;
-	//	if (debug) {
-	//		buf[len] = 0;
-	//		std::cout << buf << std::endl;
-	//	}
+  write(build("sMN", space, "LMCstopmeas"));
+  read();
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -144,22 +241,14 @@ LMS1xx::stop_measurements()
 device_status
 LMS1xx::status()
 {
-	char buf[100];
-	sprintf(buf, "%c%s%c", 0x02, "sRN STlms", 0x03);
+  write(build("sRN", space, "STlms"));
+  read();
 
-	write(sockDesc, buf, strlen(buf));
+  auto st = 0;
+  std::istream buffer_stream{&m_buffer};
+  buffer_stream >> _ >> _ >> st;
 
-	int len = read(sockDesc, buf, 100);
-	//	if (buf[0] != 0x02)
-	//		std::cout << "invalid packet recieved" << std::endl;
-	//	if (debug) {
-	//		buf[len] = 0;
-	//		std::cout << buf << std::endl;
-	//	}
-	int ret;
-	sscanf((buf + 10), "%d", &ret);
-
-  return static_cast<device_status>(ret);
+  return static_cast<device_status>(st);
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -167,41 +256,29 @@ LMS1xx::status()
 void
 LMS1xx::login()
 {
-	char buf[100];
-	sprintf(buf, "%c%s%c", 0x02, "sMN SetAccessMode 03 F4724744", 0x03);
-
-	write(sockDesc, buf, strlen(buf));
-
-	int len = read(sockDesc, buf, 100);
-	//	if (buf[0] != 0x02)
-	//		std::cout << "invalid packet recieved" << std::endl;
-	//	if (debug) {
-	//		buf[len] = 0;
-	//		std::cout << buf << std::endl;
-	//	}
+  write(build("sMN", space, "SetAccessMode", space, "03", space, "F4724744"));
+  read();
 }
 
 /*------------------------------------------------------------------------------------------------*/
 
 scan_configuration
 LMS1xx::get_configuration()
-const
 {
+  write(build("sRN", space, "LMPscancfg"));
+  read();
+
   auto cfg = scan_configuration{};
-	char buf[100];
-	sprintf(buf, "%c%s%c", 0x02, "sRN LMPscancfg", 0x03);
+  std::istream buffer_stream{&m_buffer};
+  buffer_stream
+    >> _
+    >> _
+    >> std::hex >> cfg.scaningFrequency
+    >> _
+    >> std::hex >> cfg.angleResolution
+    >> std::hex >> cfg.startAngle
+    >> std::hex >> cfg.stopAngle;
 
-	write(sockDesc, buf, strlen(buf));
-
-	int len = read(sockDesc, buf, 100);
-	//	if (buf[0] != 0x02)
-	//		std::cout << "invalid packet recieved" << std::endl;
-	//	if (debug) {
-	//		buf[len] = 0;
-	//		std::cout << buf << std::endl;
-	//	}
-
-	sscanf(buf + 1, "%*s %*s %X %*d %X %X %X", &cfg.scaningFrequency, &cfg.angleResolution, &cfg.startAngle, &cfg.stopAngle);
 	return cfg;
 }
 
@@ -210,16 +287,14 @@ const
 void
 LMS1xx::set_scan_configuration(const scan_configuration& cfg)
 {
-	char buf[100];
-	sprintf(buf, "%c%s %X +1 %X %X %X%c", 0x02, "sMN mLMPsetscancfg",
-			cfg.scaningFrequency, cfg.angleResolution, cfg.startAngle,
-			cfg.stopAngle, 0x03);
+  /// @todo Use build_telegram
+  char buf[512];
+  sprintf(buf, "%c%s %X +1 %X %X %X%c", frame_start, "sMN mLMPsetscancfg",
+          cfg.scaningFrequency, cfg.angleResolution, cfg.startAngle,
+          cfg.stopAngle, frame_end);
 
-	write(sockDesc, buf, strlen(buf));
-
-	int len = read(sockDesc, buf, 100);
-
-	buf[len - 1] = 0;
+  write(buf, strlen(buf));
+  read();
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -227,15 +302,15 @@ LMS1xx::set_scan_configuration(const scan_configuration& cfg)
 void
 LMS1xx::set_scan_data_configuration(const scan_data_configuration& cfg)
 {
-	char buf[100];
-	sprintf(buf, "%c%s %02X 00 %d %d 0 %02X 00 %d %d 0 %d +%d%c", 0x02,
+  /// @todo Use build_telegram
+	char buf[512];
+	sprintf(buf, "%c%s %02X 00 %d %d 0 %02X 00 %d %d 0 %d +%d%c", frame_start,
 			"sWN LMDscandatacfg", cfg.outputChannel, cfg.remission ? 1 : 0,
 			cfg.resolution, cfg.encoder, cfg.position ? 1 : 0,
-			cfg.deviceName ? 1 : 0, cfg.timestamp ? 1 : 0, cfg.outputInterval, 0x03);
-	write(sockDesc, buf, strlen(buf));
+			cfg.deviceName ? 1 : 0, cfg.timestamp ? 1 : 0, cfg.outputInterval, frame_end);
 
-	int len = read(sockDesc, buf, 100);
-	buf[len - 1] = 0;
+  write(buf, strlen(buf));
+  read();
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -243,20 +318,8 @@ LMS1xx::set_scan_data_configuration(const scan_data_configuration& cfg)
 void
 LMS1xx::scan_continous(bool start)
 {
-	char buf[100];
-  sprintf(buf, "%c%s %d%c", 0x02, "sEN LMDscandata", start ? 1 : 0, 0x03);
-
-	write(sockDesc, buf, strlen(buf));
-
-	int len = read(sockDesc, buf, 100);
-
-	if (buf[0] != 0x02)
-		printf("invalid packet recieved\n");
-
-//	if (start = 0) {
-//		for (int i = 0; i < 10; i++)
-//			read(sockDesc, buf, 100);
-//	}
+  write(build("sEN", space,  "LMDscandata", space, start ? 1 : 0));
+  read();
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -264,30 +327,13 @@ LMS1xx::scan_continous(bool start)
 boost::optional<scanData>
 LMS1xx::getData()
 {
-  auto data = scanData{};
+  read();
+  const auto sz = m_buffer.size();
+  auto buf = std::unique_ptr<char[]>(new char[sz]);
+  std::copy(std::istreambuf_iterator<char>{&m_buffer}, std::istreambuf_iterator<char>{}, buf.get());
+  buf[sz - 1] = '\0';
 
-	char buf[20000];
-	fd_set rfds;
-	struct timeval tv;
-	int retval, len;
-	len = 0;
-
-	do {
-		FD_ZERO(&rfds);
-		FD_SET(sockDesc, &rfds);
-
-		tv.tv_sec = 0;
-		tv.tv_usec = 50000;
-		retval = select(sockDesc + 1, &rfds, NULL, NULL, &tv);
-		if (retval) {
-			len += read(sockDesc, buf + len, 20000 - len);
-		}
-	} while ((buf[0] != 0x02) || (buf[len - 1] != 0x03));
-
-	//	if (debug)
-	//		std::cout << "scan data recieved" << std::endl;
-	buf[len - 1] = 0;
-	char* tok = strtok(buf, " "); //Type of command
+	char* tok = strtok(buf.get(), " "); //Type of command
 	tok = strtok(NULL, " "); //Command
 	tok = strtok(NULL, " "); //VersionNumber
 	tok = strtok(NULL, " "); //DeviceNumber
@@ -308,7 +354,9 @@ LMS1xx::getData()
 	tok = strtok(NULL, " "); //NumberEncoders
 	int NumberEncoders;
 	sscanf(tok, "%d", &NumberEncoders);
-	for (int i = 0; i < NumberEncoders; i++) {
+
+  for (auto i = 0; i < NumberEncoders; ++i)
+  {
 		tok = strtok(NULL, " "); //EncoderPosition
 		tok = strtok(NULL, " "); //EncoderSpeed
 	}
@@ -317,19 +365,28 @@ LMS1xx::getData()
 	int NumberChannels16Bit;
 	sscanf(tok, "%d", &NumberChannels16Bit);
 
+  auto data = scanData{};
+
   for (int i = 0; i < NumberChannels16Bit; i++)
   {
 		int type = -1; // 0 DIST1 1 DIST2 2 RSSI1 3 RSSI2
 		char content[6];
 		tok = strtok(NULL, " "); //MeasuredDataContent
 		sscanf(tok, "%s", content);
-		if (!strcmp(content, "DIST1")) {
+		if (!strcmp(content, "DIST1"))
+    {
 			type = 0;
-		} else if (!strcmp(content, "DIST2")) {
+		}
+    else if (!strcmp(content, "DIST2"))
+    {
 			type = 1;
-		} else if (!strcmp(content, "RSSI1")) {
+		}
+    else if (!strcmp(content, "RSSI1"))
+    {
 			type = 2;
-		} else if (!strcmp(content, "RSSI2")) {
+		}
+    else if (!strcmp(content, "RSSI2"))
+    {
 			type = 3;
 		}
 		tok = strtok(NULL, " "); //ScalingFactor
@@ -340,17 +397,25 @@ LMS1xx::getData()
 		int NumberData;
 		sscanf(tok, "%X", &NumberData);
 
-		if (type == 0) {
+		if (type == 0)
+    {
 			data.dist_len1 = NumberData;
-		} else if (type == 1) {
+		}
+    else if (type == 1)
+    {
 			data.dist_len2 = NumberData;
-		} else if (type == 2) {
+		}
+    else if (type == 2)
+    {
 			data.rssi_len1 = NumberData;
-		} else if (type == 3) {
+		}
+    else if (type == 3)
+    {
 			data.rssi_len2 = NumberData;
 		}
 
-		for (int i = 0; i < NumberData; i++) {
+		for (auto i = 0; i < NumberData; ++i)
+    {
 			int dat;
 			tok = strtok(NULL, " "); //data
 			sscanf(tok, "%X", &dat);
@@ -428,18 +493,8 @@ LMS1xx::getData()
 void
 LMS1xx::save_configuration()
 {
-	char buf[100];
-	sprintf(buf, "%c%s%c", 0x02, "sMN mEEwriteall", 0x03);
-
-	write(sockDesc, buf, strlen(buf));
-
-	int len = read(sockDesc, buf, 100);
-	//	if (buf[0] != 0x02)
-	//		std::cout << "invalid packet recieved" << std::endl;
-	//	if (debug) {
-	//		buf[len] = 0;
-	//		std::cout << buf << std::endl;
-	//	}
+  write(build("sMN", space, "mEEwriteall"));
+  read();
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -447,18 +502,8 @@ LMS1xx::save_configuration()
 void
 LMS1xx::start_device()
 {
-	char buf[100];
-	sprintf(buf, "%c%s%c", 0x02, "sMN Run", 0x03);
-
-	write(sockDesc, buf, strlen(buf));
-
-	int len = read(sockDesc, buf, 100);
-	//	if (buf[0] != 0x02)
-	//		std::cout << "invalid packet recieved" << std::endl;
-	//	if (debug) {
-	//		buf[len] = 0;
-	//		std::cout << buf << std::endl;
-	//	}
+  write(build("sMN", space, "Run"));
+  read();
 }
 
 /*------------------------------------------------------------------------------------------------*/

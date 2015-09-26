@@ -1,7 +1,4 @@
-/*
- * LMS1xx.h
- *
- *  Created on: 09-08-2010
+/*  Created on: 09-08-2010
  *  Author: Konrad Banachowicz
  ***************************************************************************
  *   This library is free software; you can redistribute it and/or         *
@@ -26,6 +23,10 @@
 #include <cstdint>
 #include <string>
 
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/steady_timer.hpp>
+#include <boost/asio/streambuf.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <boost/optional.hpp>
 
 namespace lms1xx {
@@ -92,7 +93,7 @@ struct scan_data_configuration
 	bool timestamp;
 
   /// Output interval
-  /// Defines which scan is output (first, second, ..., 50000th).
+  /// Defines which scan is output (1 for 1st, 2 for 2nd, up to 50000).
 	int outputInterval;
 };
 
@@ -149,11 +150,23 @@ class LMS1xx final
 {
 public:
 
+  /// @brief Can't copy-construct a LMS1xx
+  LMS1xx(const LMS1xx&) = delete;
+
+  /// @brief Can't copy a LMS1xx
+  LMS1xx& operator=(const LMS1xx&) = delete;
+
+  /// @brief Can move-construct a LMS1xx
+  LMS1xx(LMS1xx&&) = default;
+
+  /// @brief Can move a LMS1xx
+  LMS1xx& operator=(LMS1xx&&) = default;
+
   /// @brief Default constructor
   LMS1xx();
 
   /// @brief Construct that connects to a given device
-  LMS1xx(const std::string& host, unsigned short port);
+  LMS1xx(const std::string& host, const std::string& port);
 
   /// @brief Destructor.
   ///
@@ -163,8 +176,9 @@ public:
 	/// @brief Connect to LMS1xx
 	/// @param host LMS1xx host name or ip address
 	/// @param port LMS1xx port number
+  /// @note Does nothing if the device is already connected
 	void
-  connect(const std::string& host, unsigned short port);
+  connect(const std::string& host, const std::string& port);
 
 	/// @brief Disconnect from LMS1xx device
 	void
@@ -204,8 +218,7 @@ public:
 	/// - start angle.
 	/// - stop angle.
 	scan_configuration
-  get_configuration()
-  const;
+  get_configuration();
 
 	/// @brief Set scan configuration
   ///
@@ -246,9 +259,34 @@ public:
 
 private:
 
-  bool m_connected;
+  /// @brief Read a telegram from the device
+  /// @note m_buffer is reset before each read
+  /// Result will be available in m_buffer.
+  void
+  read();
 
-	int sockDesc;
+  void
+  write(const std::string& telegram);
+
+  void
+  write(const char* telegram, std::size_t len);
+
+private:
+
+  /// @brief Manage I/O
+  boost::asio::io_service m_io;
+
+  /// @brief The connection to the device
+  boost::asio::ip::tcp::socket m_socket;
+
+  /// @brief The buffer of received telegrams
+  boost::asio::streambuf m_buffer;
+
+  /// @brief Track timeouts
+  boost::asio::steady_timer m_timer;
+
+  /// @brief True if the device is connected
+  bool m_connected;
 };
 
 /*------------------------------------------------------------------------------------------------*/

@@ -16,7 +16,7 @@ main()
   cc.deviceName = false;
   cc.outputInterval = 1;
 
-  auto laser = lms1xx::LMS1xx{"192.168.0.1", 2111};
+  lms1xx::LMS1xx laser{"192.168.0.1", "2111"};
 
   if (not laser.connected())
 	{
@@ -38,32 +38,37 @@ main()
   laser.start_device();
 	laser.scan_continous(true);
 
-
-  for (auto i = 0ul; i < 10; ++i)
+  for (auto i = 0ul; i < 9999999999; ++i)
   {
-    if (const auto data_opt = laser.getData())
+    try
     {
-      const auto& data = *data_opt;
-      // std::cout << data.dist_len1 << " " << data.rssi_len1 <<  '\n';
-
-      auto range = 0.0;
-      for (int i = 0; i < data.dist_len1; i++)
+      if (const auto data_opt = laser.getData())
       {
-        // scan_msg.ranges[i] = data.dist1[i] * 0.001;
-        // std::cout << data.dist1[i] * 0.001 << '\n';
-        range += data.dist1[i] * 0.001;
-      }
+        const auto& data = *data_opt;
+        // std::cout << data.dist_len1 << " " << data.rssi_len1 <<  '\n';
 
-      auto inten = uint16_t{};
-      for (int i = 0; i < data.rssi_len1; i++)
-      {
-        // scan_msg.intensities[i] = data.rssi1[i];
-        // std::cout << data.rssi1[i] << '\n';
-        inten += data.rssi1[i];
+        auto range = 0.0;
+        for (int i = 0; i < data.dist_len1; i++)
+        {
+          // scan_msg.ranges[i] = data.dist1[i] * 0.001;
+          // std::cout << data.dist1[i] * 0.001 << '\n';
+          range += data.dist1[i] * 0.001;
+        }
+
+        auto inten = uint16_t{};
+        for (int i = 0; i < data.rssi_len1; i++)
+        {
+          // scan_msg.intensities[i] = data.rssi1[i];
+          // std::cout << data.rssi1[i] << '\n';
+          inten += data.rssi1[i];
+        }
+        std::cout << range << "  " << inten << std::endl;
       }
-      std::cout << range << "  " << inten << std::endl;
     }
-
+    catch (const std::runtime_error& e)
+    {
+      std::cerr << e.what() << '\n';
+    }
   }
 
 	laser.login();
