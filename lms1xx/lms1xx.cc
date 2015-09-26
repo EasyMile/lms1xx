@@ -34,19 +34,33 @@
 
 namespace lms1xx {
 
+/*------------------------------------------------------------------------------------------------*/
+
 LMS1xx::LMS1xx()
-  : connected{false}
+  : m_connected{false}
 {}
+
+/*------------------------------------------------------------------------------------------------*/
+
+LMS1xx::LMS1xx(const std::string& host, unsigned short port)
+  : m_connected{false}
+{
+  connect(host, port);
+}
+
+/*------------------------------------------------------------------------------------------------*/
 
 LMS1xx::~LMS1xx()
 {
   disconnect();
 }
 
+/*------------------------------------------------------------------------------------------------*/
+
 void
-LMS1xx::connect(std::string host, unsigned short port)
+LMS1xx::connect(const std::string& host, unsigned short port)
 {
-	if (!connected)
+	if (not m_connected)
   {
 		sockDesc = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (sockDesc)
@@ -57,34 +71,40 @@ LMS1xx::connect(std::string host, unsigned short port)
 			stSockAddr.sin_port = htons(port);
 			Res = inet_pton(AF_INET, host.c_str(), &stSockAddr.sin_addr);
 
-			int ret = ::connect(sockDesc, (struct sockaddr *) &stSockAddr,
-					sizeof stSockAddr);
-			if (ret == 0) {
-				connected = true;
+			int ret = ::connect(sockDesc, (struct sockaddr *) &stSockAddr, sizeof stSockAddr);
+			if (ret == 0)
+      {
+				m_connected = true;
 			}
 		}
 	}
 }
 
+/*------------------------------------------------------------------------------------------------*/
+
 void
 LMS1xx::disconnect()
 {
-	if (connected)
+	if (m_connected)
   {
 		close(sockDesc);
-		connected = false;
+		m_connected = false;
 	}
 }
 
+/*------------------------------------------------------------------------------------------------*/
+
 bool
-LMS1xx::isConnected()
+LMS1xx::connected()
 const noexcept
 {
-	return connected;
+	return m_connected;
 }
 
+/*------------------------------------------------------------------------------------------------*/
+
 void
-LMS1xx::startMeas()
+LMS1xx::start_measurements()
 {
 	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sMN LMCstartmeas", 0x03);
@@ -100,8 +120,10 @@ LMS1xx::startMeas()
 	//	}
 }
 
+/*------------------------------------------------------------------------------------------------*/
+
 void
-LMS1xx::stopMeas()
+LMS1xx::stop_measurements()
 {
 	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sMN LMCstopmeas", 0x03);
@@ -117,8 +139,10 @@ LMS1xx::stopMeas()
 	//	}
 }
 
-status
-LMS1xx::queryStatus()
+/*------------------------------------------------------------------------------------------------*/
+
+device_status
+LMS1xx::status()
 {
 	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sRN STlms", 0x03);
@@ -135,9 +159,10 @@ LMS1xx::queryStatus()
 	int ret;
 	sscanf((buf + 10), "%d", &ret);
 
-//	return (status_t) ret;
-  return static_cast<status>(ret);
+  return static_cast<device_status>(ret);
 }
+
+/*------------------------------------------------------------------------------------------------*/
 
 void
 LMS1xx::login()
@@ -156,11 +181,13 @@ LMS1xx::login()
 	//	}
 }
 
-scanCfg
-LMS1xx::getScanCfg()
+/*------------------------------------------------------------------------------------------------*/
+
+scan_configuration
+LMS1xx::get_configuration()
 const
 {
-	scanCfg cfg;
+  auto cfg = scan_configuration{};
 	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sRN LMPscancfg", 0x03);
 
@@ -174,13 +201,14 @@ const
 	//		std::cout << buf << std::endl;
 	//	}
 
-	sscanf(buf + 1, "%*s %*s %X %*d %X %X %X", &cfg.scaningFrequency,
-			&cfg.angleResolution, &cfg.startAngle, &cfg.stopAngle);
+	sscanf(buf + 1, "%*s %*s %X %*d %X %X %X", &cfg.scaningFrequency, &cfg.angleResolution, &cfg.startAngle, &cfg.stopAngle);
 	return cfg;
 }
 
+/*------------------------------------------------------------------------------------------------*/
+
 void
-LMS1xx::setScanCfg(const scanCfg &cfg)
+LMS1xx::set_scan_configuration(const scan_configuration& cfg)
 {
 	char buf[100];
 	sprintf(buf, "%c%s %X +1 %X %X %X%c", 0x02, "sMN mLMPsetscancfg",
@@ -194,7 +222,11 @@ LMS1xx::setScanCfg(const scanCfg &cfg)
 	buf[len - 1] = 0;
 }
 
-void LMS1xx::setScanDataCfg(const scanDataCfg &cfg) {
+/*------------------------------------------------------------------------------------------------*/
+
+void
+LMS1xx::set_scan_data_configuration(const scan_data_configuration& cfg)
+{
 	char buf[100];
 	sprintf(buf, "%c%s %02X 00 %d %d 0 %02X 00 %d %d 0 %d +%d%c", 0x02,
 			"sWN LMDscandatacfg", cfg.outputChannel, cfg.remission ? 1 : 0,
@@ -206,8 +238,10 @@ void LMS1xx::setScanDataCfg(const scanDataCfg &cfg) {
 	buf[len - 1] = 0;
 }
 
+/*------------------------------------------------------------------------------------------------*/
+
 void
-LMS1xx::scanContinous(bool start)
+LMS1xx::scan_continous(bool start)
 {
 	char buf[100];
   sprintf(buf, "%c%s %d%c", 0x02, "sEN LMDscandata", start ? 1 : 0, 0x03);
@@ -219,11 +253,13 @@ LMS1xx::scanContinous(bool start)
 	if (buf[0] != 0x02)
 		printf("invalid packet recieved\n");
 
-	if (start = 0) {
-		for (int i = 0; i < 10; i++)
-			read(sockDesc, buf, 100);
-	}
+//	if (start = 0) {
+//		for (int i = 0; i < 10; i++)
+//			read(sockDesc, buf, 100);
+//	}
 }
+
+/*------------------------------------------------------------------------------------------------*/
 
 boost::optional<scanData>
 LMS1xx::getData()
@@ -387,8 +423,10 @@ LMS1xx::getData()
   return data;
 }
 
+/*------------------------------------------------------------------------------------------------*/
+
 void
-LMS1xx::saveConfig()
+LMS1xx::save_configuration()
 {
 	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sMN mEEwriteall", 0x03);
@@ -404,8 +442,10 @@ LMS1xx::saveConfig()
 	//	}
 }
 
+/*------------------------------------------------------------------------------------------------*/
+
 void
-LMS1xx::startDevice()
+LMS1xx::start_device()
 {
 	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sMN Run", 0x03);
@@ -420,5 +460,7 @@ LMS1xx::startDevice()
 	//		std::cout << buf << std::endl;
 	//	}
 }
+
+/*------------------------------------------------------------------------------------------------*/
 
 } // namespace lms1xx

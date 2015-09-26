@@ -32,294 +32,225 @@ namespace lms1xx {
 
 /*------------------------------------------------------------------------------------------------*/
 
-/*!
-* @class scanCfg
-* @brief Structure containing scan configuration.
-*
-* @author Konrad Banachowicz
-*/
-struct scanCfg
+/// @brief Structure containing scan configuration
+struct scan_configuration
 {
-	/*!
-	 * @brief Scanning frequency.
-	 * 1/100 Hz
-	 */
+	/// @brief Scanning frequency
+  ///
+  /// From 1 to 100 Hz
 	int scaningFrequency;
 
-	/*!
-	 * @brief Scanning resolution.
-	 * 1/10000 degree
-	 */
+	/// @brief Scanning resolution
+  ///
+  /// 1/10000 degree
 	int angleResolution;
 
-	/*!
-	 * @brief Start angle.
-	 * 1/10000 degree
-	 */
+	/// @brief Start angle
+  ///
+  /// 1/10000 degree
 	int startAngle;
 
-	/*!
-	 * @brief Stop angle.
-	 * 1/10000 degree
-	 */
+	/// @brief Stop angle
+  /// 1/10000 degree
 	int stopAngle;
 };
 
 /*------------------------------------------------------------------------------------------------*/
 
-/*!
-* @class scanDataCfg
-* @brief Structure containing scan data configuration.
-*
-* @author Konrad Banachowicz
-*/
-struct scanDataCfg
+/// @brief Structure containing scan data configuration
+struct scan_data_configuration
 {
-	/*!
-	 * @brief Output channels.
-	 * Defines which output channel is activated.
-	 */
+	/// @brief Output channels
+  ///
+  /// Defines which output channel is activated.
 	int outputChannel;
 
-	/*!
-	 * @brief Remission.
-	 * Defines whether remission values are output.
-	 */
+	//// @brief Remission
+  ///
+  /// Defines whether remission values are output.
 	bool remission;
 
-	/*!
-	 * @brief Remission resolution.
-	 * Defines whether the remission values are output with 8-bit or 16bit resolution.
-	 */
+  /// @brief Remission resolution
+  ///
+  /// Defines whether the remission values are output with 8-bit or 16bit resolution.
 	int resolution;
 
-	/*!
-	 * @brief Encoders channels.
-	 * Defines which output channel is activated.
-	 */
+  /// @brief Encoders channels
+  ///
+  /// Defines which output channel is activated.
 	int encoder;
 
-	/*!
-	 * @brief Position.
-	 * Defines whether position values are output.
-	 */
+  /// @brief Position
+  ///
+  /// Defines whether position values are output.
 	bool position;
 
-	/*!
-	 * @brief Device name.
-	 * Determines whether the device name is to be output.
-	 */
+  /// @brief Device name
+  /// Determines whether the device name is to be output
 	bool deviceName;
-	
+
 	bool timestamp;
 
-	/*!
-	 * @brief Output interval.
-	 * Defines which scan is output.
-	 *
-	 * 01 every scan\n
-	 * 02 every 2nd scan\n
-	 * ...\n
-	 * 50000 every 50000th scan
-	 */
+  /// Output interval
+  /// Defines which scan is output (first, second, ..., 50000th).
 	int outputInterval;
 };
 
 /*------------------------------------------------------------------------------------------------*/
 
-/*!
-* @class scanData
-* @brief Structure containing single scan message.
-*
-* @author Konrad Banachowicz
-*/
+/// @brief Structure containing single scan message.
 struct scanData
 {
 
-	/*!
-	 * @brief Number of samples in dist1.
-	 *
-	 */
+	/// @brief Number of samples in dist1.
 	int dist_len1;
 
-	/*!
-	 * @brief Radial distance for the first reflected pulse
-	 *
-	 */
+	/// @brief Radial distance for the first reflected pulse
 	uint16_t dist1[1082];
 
-	/*!
-	 * @brief Number of samples in dist2.
-	 *
-	 */
+	/// @brief Number of samples in dist2.
 	int dist_len2;
 
-	/*!
-	 * @brief Radial distance for the second reflected pulse
-	 *
-	 */
+	/// @brief Radial distance for the second reflected pulse
 	uint16_t dist2[1082];
 
-	/*!
-	 * @brief Number of samples in rssi1.
-	 *
-	 */
+	/// @brief Number of samples in rssi1.
 	int rssi_len1;
 
-	/*!
-	 * @brief Remission values for the first reflected pulse
-	 *
-	 */
+	/// @brief Remission values for the first reflected pulse
 	uint16_t rssi1[1082];
 
-	/*!
-	 * @brief Number of samples in rssi2.
-	 *
-	 */
+	/// @brief Number of samples in rssi2.
 	int rssi_len2;
 
-	/*!
-	 * @brief Remission values for the second reflected pulse
-	 *
-	 */
+	/// @brief Remission values for the second reflected pulse
 	uint16_t rssi2[1082];
 };
 
 /*------------------------------------------------------------------------------------------------*/
 
-enum class status
+/// @brief Describe LMS1xx possible statuses
+enum class device_status
 {
-	undefined = 0,
-	initialisation = 1,
-	configuration = 2,
-	idle = 3,
-	rotated = 4,
-	in_preparation = 5,
-	ready = 6,
-	ready_for_measurement = 7
+  undefined = 0
+, initialisation = 1
+, configuration = 2
+, idle = 3
+, rotated = 4
+, in_preparation = 5
+, ready = 6
+, ready_for_measurement = 7
 };
 
 /*------------------------------------------------------------------------------------------------*/
 
-/*!
-* @class LMS1xx
-* @brief Class responsible for communicating with LMS1xx device.
-*
-* @author Konrad Banachowicz
-*/
-
+/// @brief Class responsible for communicating with LMS1xx device.
 class LMS1xx final
 {
-
 public:
 
+  /// @brief Default constructor
   LMS1xx();
 
+  /// @brief Construct that connects to a given device
+  LMS1xx(const std::string& host, unsigned short port);
+
+  /// @brief Destructor.
+  ///
+  /// Disconnect from device.
   ~LMS1xx();
 
-	/*!
-	* @brief Connect to LMS1xx.
-	* @param host LMS1xx host name or ip address.
-	* @param port LMS1xx port number.
-	*/
-	void connect(std::string host, unsigned short port);
+	/// @brief Connect to LMS1xx
+	/// @param host LMS1xx host name or ip address
+	/// @param port LMS1xx port number
+	void
+  connect(const std::string& host, unsigned short port);
 
-	/*!
-	* @brief Disconnect from LMS1xx device.
-	*/
-	void disconnect();
+	/// @brief Disconnect from LMS1xx device
+	void
+  disconnect();
 
-	/*!
-	* @brief Get status of connection.
-	* @returns connected or not.
-	*/
-	bool isConnected() const noexcept;
+	/// @brief Get status of connection
+	/// @returns connected or not.
+	bool
+  connected()
+  const noexcept;
 
-	/*!
-	* @brief Start measurements.
-	* After receiving this command LMS1xx unit starts spinning laser and measuring.
-	*/
-	void startMeas();
+	/// @brief Start measurements
+  ///
+	/// After receiving this command LMS1xx unit starts spinning laser and measuring.
+	void
+  start_measurements();
 
-	/*!
-	* @brief Stop measurements.
-	* After receiving this command LMS1xx unit stop spinning laser and measuring.
-	*/
-	void stopMeas();
+	/// @brief Stop measurements
+  ///
+  /// After receiving this command LMS1xx unit stop spinning laser and measuring.
+	void stop_measurements();
 
-	/*!
-	* @brief Get current status of LMS1xx device.
-	* @returns status of LMS1xx device.
-	*/
-	status queryStatus();
+	/// @brief Get current status of LMS1xx device
+	device_status
+  status();
 
-	/*!
-	* @brief Log into LMS1xx unit.
-	* Increase privilege level, giving ability to change device configuration.
-	*/
+	/// @brief Log into LMS1xx unit.
+  ///
+	/// Increase privilege level, giving ability to change device configuration.
 	void login();
 
-	/*!
-	* @brief Get current scan configuration.
-	* Get scan configuration :
-	* - scanning frequency.
-	* - scanning resolution.
-	* - start angle.
-	* - stop angle.
-	* @returns scanCfg structure.
-	*/
-	scanCfg getScanCfg() const;
+	/// @brief Get current scan configuration
+  ///
+	/// Get scan configuration :
+	/// - scanning frequency.
+	/// - scanning resolution.
+	/// - start angle.
+	/// - stop angle.
+	scan_configuration
+  get_configuration()
+  const;
 
-	/*!
-	* @brief Set scan configuration.
-	* Get scan configuration :
-	* - scanning frequency.
-	* - scanning resolution.
-	* - start angle.
-	* - stop angle.
-	* @param cfg structure containing scan configuration.
-	*/
-	void setScanCfg(const scanCfg &cfg);
+	/// @brief Set scan configuration
+  ///
+	/// Get scan configuration :
+	/// - scanning frequency.
+	/// - scanning resolution.
+	/// - start angle.
+	/// - stop angle.
+	void
+  set_scan_configuration(const scan_configuration &cfg);
 
-	/*!
-	* @brief Set scan data configuration.
-	* Set format of scan message returned by device.
-	* @param cfg structure containing scan data configuration.
-	*/
-	void setScanDataCfg(const scanDataCfg &cfg);
+	/// @brief Set scan data configuration
+  ///
+  /// Set format of scan message returned by device.
+	void
+  set_scan_data_configuration(const scan_data_configuration &cfg);
 
-	/*!
-	* @brief Start or stop continuous data acquisition.
-	* After reception of this command device start or stop continuous data stream containing scan messages.
-	* @param start 1 : start 0 : stop
-	*/
-	void scanContinous(bool start);
+	/// @brief Start or stop continuous data acquisition
+  ///
+	/// After reception of this command device start or stop continuous data stream containing scan
+  /// messages.
+	void
+  scan_continous(bool start);
 
-	/*!
-	* @brief Receive single scan message.
-	*
-	* @param data pointer to scanData buffer structure.
-	*/
-	boost::optional<scanData> getData();
+	/// @brief Receive single scan message
+	boost::optional<scanData>
+  getData();
 
-	/*!
-	* @brief Save data permanently.
-	* Parameters are saved in the EEPROM of the LMS and will also be available after the device is switched off and on again.
-	*
-	*/
-	void saveConfig();
+	/// @brief Save data permanently
+	/// Parameters are saved in the EEPROM of the LMS and will also be available after the device is
+  /// switched off and on again.
+	void
+  save_configuration();
 
-	/*!
-	* @brief The device is returned to the measurement mode after configuration.
-	*
-	*/
-	void startDevice();
+	/// @brief The device is returned to the measurement mode after configuration
+	void
+  start_device();
 
 private:
 
-  bool connected;
+  bool m_connected;
 
 	int sockDesc;
 };
+
+/*------------------------------------------------------------------------------------------------*/
 
 } // namespace lms1xx
