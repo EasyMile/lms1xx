@@ -4,11 +4,11 @@ This project contains library for interfacing with SICK LMS1xx lidars.
 
 Authors:
   Konrad Banachowicz
+  Alexandre Hamez
 
 === Build instructions
 
-To build this software please do the following:
 mkdir build
 cd build
-cmake  ..
+cmake  /path/to/lms1xx
 make && make install 
