@@ -1,6 +1,7 @@
-#include <algorithm>     // copy
+#include <algorithm> // copy
+#include <cstdlib>   // strtol
 #include <iomanip>
-#include <memory>        // unique_ptr
+#include <memory>    // unique_ptr
 #include <sstream>
 
 #include <boost/asio/connect.hpp>
@@ -238,6 +239,7 @@ LMS1xx::get_configuration()
 
   read();
   auto cfg = scan_configuration{};
+  /// @todo Check if parsing went OK
   std::istream{&m_buffer}
     >> _
     >> _
@@ -290,6 +292,7 @@ LMS1xx::get_scan_output_range()
 
   read();
   auto range = scan_output_range{};
+  /// @todo Check if parsing went OK
   std::istream{&m_buffer}
     >> _
     >> _
@@ -407,9 +410,9 @@ LMS1xx::get_data()
 
 		for (auto i = 0; i < NumberData; ++i)
     {
-			int dat;
+      char* end;
 			tok = strtok(NULL, " "); //data
-			sscanf(tok, "%X", &dat);
+      const auto dat = ::strtol(tok, &end, 16);
 
 			if (type == 0) {
 				data.dist1[i] = dat;
