@@ -304,6 +304,7 @@ LMS1xx::getData()
   std::copy(std::istreambuf_iterator<char>{&m_buffer}, std::istreambuf_iterator<char>{}, buf.get());
   buf[sz - 1] = '\0';
 
+  /// @todo Rewrite parsing
 	char* tok = strtok(buf.get(), " "); //Type of command
 	tok = strtok(NULL, " "); //Command
 	tok = strtok(NULL, " "); //VersionNumber
