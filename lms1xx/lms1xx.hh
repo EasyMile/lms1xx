@@ -18,21 +18,21 @@ struct scan_configuration
 	/// @brief Scanning frequency
   ///
   /// From 1 to 100 Hz
-	int scaningFrequency;
+	int scaning_frequency;
 
 	/// @brief Scanning resolution
   ///
   /// 1/10000 degree
-	int angleResolution;
+	int angle_resolution;
 
 	/// @brief Start angle
   ///
   /// 1/10000 degree
-	int startAngle;
+	int start_angle;
 
 	/// @brief Stop angle
   /// 1/10000 degree
-	int stopAngle;
+	int stop_angle;
 };
 
 /*------------------------------------------------------------------------------------------------*/
@@ -43,7 +43,7 @@ struct scan_data_configuration
 	/// @brief Output channels
   ///
   /// Defines which output channel is activated.
-	int outputChannel;
+	int output_channel;
 
 	//// @brief Remission
   ///
@@ -67,13 +67,13 @@ struct scan_data_configuration
 
   /// @brief Device name
   /// Determines whether the device name is to be output
-	bool deviceName;
+	bool device_name;
 
 	bool timestamp;
 
   /// Output interval
   /// Defines which scan is output (1 for 1st, 2 for 2nd, up to 50000).
-	int outputInterval;
+  int output_interval;
 };
 
 /*------------------------------------------------------------------------------------------------*/
@@ -81,7 +81,6 @@ struct scan_data_configuration
 /// @brief Structure containing single scan message.
 struct scan_data
 {
-
 	/// @brief Number of samples in dist1.
 	int dist_len1;
 
@@ -113,13 +112,13 @@ struct scan_data
 struct scan_output_range
 {
 	/// @brief Scanning resolution in 1/10000 degree
-	int angleResolution;
+	int angle_resolution;
 
 	/// @brief Start angle in 1/10000 degree
-	int startAngle;
+	int start_angle;
 
 	/// @brief Stop angle in 1/10000 degree
-	int stopAngle;
+	int stop_angle;
 };
 
 /*------------------------------------------------------------------------------------------------*/
@@ -139,12 +138,16 @@ enum class device_status
 
 /*------------------------------------------------------------------------------------------------*/
 
+/// @brief Thrown when a telegram couldn't have been read
+///
+/// Gene
 class invalid_telegram_error final
   : public std::exception
 {};
 
 /*------------------------------------------------------------------------------------------------*/
 
+/// @brief Thrown when no data have been read for a given ammount of time
 class timeout_error final
   : public std::exception
 {};
@@ -162,11 +165,11 @@ public:
   /// @brief Can't copy a LMS1xx
   LMS1xx& operator=(const LMS1xx&) = delete;
 
-  /// @brief Can move-construct a LMS1xx
-  LMS1xx(LMS1xx&&) = default;
+  /// @brief Can't move-construct a LMS1xx
+  LMS1xx(LMS1xx&&) = delete;
 
-  /// @brief Can move a LMS1xx
-  LMS1xx& operator=(LMS1xx&&) = default;
+  /// @brief Can't move a LMS1xx
+  LMS1xx& operator=(LMS1xx&&) = delete;
 
   /// @brief Default constructor
   LMS1xx(const boost::posix_time::time_duration& timeout = boost::posix_time::seconds{30});

@@ -8,13 +8,13 @@ int
 main()
 {
   auto cc = lms1xx::scan_data_configuration{};
-  cc.outputChannel = 1;
+  cc.output_channel = 1;
   cc.remission = true;
   cc.resolution = 1;
   cc.encoder = 0;
   cc.position = false;
-  cc.deviceName = false;
-  cc.outputInterval = 1;
+  cc.device_name = false;
+  cc.output_interval = 1;
 
   try
   {

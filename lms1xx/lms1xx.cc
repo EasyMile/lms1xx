@@ -25,8 +25,8 @@ static constexpr auto maximal_buffer_size = 262144ul;
 static constexpr auto space = " ";
 
 // Telegram delimiters.
-static constexpr auto frame_start = char{0x02};
-static constexpr auto frame_end   = char{0x03};
+static constexpr auto telegram_start = char{0x02};
+static constexpr auto telegram_end   = char{0x03};
 
 /*------------------------------------------------------------------------------------------------*/
 
@@ -34,7 +34,7 @@ inline
 void
 build_telegram_impl(std::stringstream& ss)
 {
-  ss << frame_end;
+  ss << telegram_end;
 }
 
 template <typename Arg, typename... Args>
@@ -50,7 +50,7 @@ std::string
 build(Args&&... args)
 {
   std::stringstream ss;
-  ss << frame_start;
+  ss << telegram_start;
   build_telegram_impl(ss, std::forward<Args>(args)...);
   return ss.str();
 }
@@ -153,7 +153,7 @@ LMS1xx::read()
 
   m_timer.expires_from_now(m_timeout);
   auto ec = boost::system::error_code{boost::asio::error::would_block};
-  boost::asio::async_read_until( m_socket, m_buffer, frame_end
+  boost::asio::async_read_until( m_socket, m_buffer, telegram_end
                                , [&](const boost::system::error_code& e, std::size_t)
                                  {
                                    ec = e;
@@ -165,7 +165,7 @@ LMS1xx::read()
   }
   while (ec == boost::asio::error::would_block);
 
-  if (*std::istreambuf_iterator<char>{&m_buffer} != frame_start)
+  if (*std::istreambuf_iterator<char>{&m_buffer} != telegram_start)
   {
     throw invalid_telegram_error{};
   }
@@ -238,15 +238,14 @@ LMS1xx::get_configuration()
 
   read();
   auto cfg = scan_configuration{};
-  std::istream stream{&m_buffer};
-  stream
+  std::istream{&m_buffer}
     >> _
     >> _
-    >> std::hex >> cfg.scaningFrequency
+    >> std::hex >> cfg.scaning_frequency
     >> _
-    >> std::hex >> cfg.angleResolution
-    >> std::hex >> cfg.startAngle
-    >> std::hex >> cfg.stopAngle;
+    >> std::hex >> cfg.angle_resolution
+    >> std::hex >> cfg.start_angle
+    >> std::hex >> cfg.stop_angle;
 
 	return cfg;
 }
@@ -256,11 +255,11 @@ LMS1xx::get_configuration()
 void
 LMS1xx::set_scan_configuration(const scan_configuration& cfg)
 {
-  /// @todo Use build_telegram
+  /// @todo Use build
   char buf[512];
-  sprintf(buf, "%c%s %X +1 %X %X %X%c", frame_start, "sMN mLMPsetscancfg",
-          cfg.scaningFrequency, cfg.angleResolution, cfg.startAngle,
-          cfg.stopAngle, frame_end);
+  sprintf(buf, "%c%s %X +1 %X %X %X%c", telegram_start, "sMN mLMPsetscancfg",
+          cfg.scaning_frequency, cfg.angle_resolution, cfg.start_angle,
+          cfg.stop_angle, telegram_end);
 
   write(buf, strlen(buf));
   read();
@@ -271,12 +270,12 @@ LMS1xx::set_scan_configuration(const scan_configuration& cfg)
 void
 LMS1xx::set_scan_data_configuration(const scan_data_configuration& cfg)
 {
-  /// @todo Use build_telegram
+  /// @todo Use build
 	char buf[512];
-	sprintf(buf, "%c%s %02X 00 %d %d 0 %02X 00 %d %d 0 %d +%d%c", frame_start,
-			"sWN LMDscandatacfg", cfg.outputChannel, cfg.remission ? 1 : 0,
+	sprintf(buf, "%c%s %02X 00 %d %d 0 %02X 00 %d %d 0 %d +%d%c", telegram_start,
+			"sWN LMDscandatacfg", cfg.output_channel, cfg.remission ? 1 : 0,
 			cfg.resolution, cfg.encoder, cfg.position ? 1 : 0,
-			cfg.deviceName ? 1 : 0, cfg.timestamp ? 1 : 0, cfg.outputInterval, frame_end);
+			cfg.device_name ? 1 : 0, cfg.timestamp ? 1 : 0, cfg.output_interval, telegram_end);
 
   write(buf, strlen(buf));
   read();
@@ -291,14 +290,13 @@ LMS1xx::get_scan_output_range()
 
   read();
   auto range = scan_output_range{};
-  std::istream stream{&m_buffer};
-  stream
+  std::istream{&m_buffer}
     >> _
     >> _
     >> _
-    >> std::hex >> range.angleResolution
-    >> std::hex >> range.startAngle
-    >> std::hex >> range.stopAngle;
+    >> std::hex >> range.angle_resolution
+    >> std::hex >> range.start_angle
+    >> std::hex >> range.stop_angle;
 
   return range;
 }
@@ -308,7 +306,7 @@ LMS1xx::get_scan_output_range()
 void
 LMS1xx::scan_continous(bool start)
 {
-  write(build("sEN", space,  "LMDscandata", space, start ? 1 : 0));
+  write(build("sEN", space, "LMDscandata", space, start ? 1 : 0));
   read();
 }
 
