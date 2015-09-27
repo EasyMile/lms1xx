@@ -109,6 +109,21 @@ struct scan_data
 
 /*------------------------------------------------------------------------------------------------*/
 
+/// @brief Structure containing scan output range configuration
+struct scan_output_range
+{
+	/// @brief Scanning resolution in 1/10000 degree
+	int angleResolution;
+
+	/// @brief Start angle in 1/10000 degree
+	int startAngle;
+
+	/// @brief Stop angle in 1/10000 degree
+	int stopAngle;
+};
+
+/*------------------------------------------------------------------------------------------------*/
+
 /// @brief Describe LMS1xx possible statuses
 enum class device_status
 {
@@ -227,6 +242,10 @@ public:
   /// Set format of scan message returned by device.
 	void
   set_scan_data_configuration(const scan_data_configuration &cfg);
+
+  /// @brief Get current output range configuration
+  scan_output_range
+  get_scan_output_range();
 
 	/// @brief Start or stop continuous data acquisition
   ///

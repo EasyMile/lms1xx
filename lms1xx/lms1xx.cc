@@ -235,11 +235,11 @@ scan_configuration
 LMS1xx::get_configuration()
 {
   write(build("sRN", space, "LMPscancfg"));
-  read();
 
+  read();
   auto cfg = scan_configuration{};
-  std::istream buffer_stream{&m_buffer};
-  buffer_stream
+  std::istream stream{&m_buffer};
+  stream
     >> _
     >> _
     >> std::hex >> cfg.scaningFrequency
@@ -280,6 +280,27 @@ LMS1xx::set_scan_data_configuration(const scan_data_configuration& cfg)
 
   write(buf, strlen(buf));
   read();
+}
+
+/*------------------------------------------------------------------------------------------------*/
+
+scan_output_range
+LMS1xx::get_scan_output_range()
+{
+  write(build("sRN", space, "LMPoutputRange"));
+
+  read();
+  auto range = scan_output_range{};
+  std::istream stream{&m_buffer};
+  stream
+    >> _
+    >> _
+    >> _
+    >> std::hex >> range.angleResolution
+    >> std::hex >> range.startAngle
+    >> std::hex >> range.stopAngle;
+
+  return range;
 }
 
 /*------------------------------------------------------------------------------------------------*/
