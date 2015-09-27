@@ -256,7 +256,7 @@ public:
 
 	/// @brief Receive single scan message
   scan_data
-  getData();
+  get_data();
 
 	/// @brief Save data permanently
 	/// Parameters are saved in the EEPROM of the LMS and will also be available after the device is

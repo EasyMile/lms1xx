@@ -38,7 +38,7 @@ main()
     {
       try
       {
-        const auto& data = laser.getData();
+        const auto& data = laser.get_data();
         // std::cout << data.dist_len1 << " " << data.rssi_len1 <<  '\n';
 
         auto range = 0.0;

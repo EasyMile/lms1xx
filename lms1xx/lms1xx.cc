@@ -315,7 +315,7 @@ LMS1xx::scan_continous(bool start)
 /*------------------------------------------------------------------------------------------------*/
 
 scan_data
-LMS1xx::getData()
+LMS1xx::get_data()
 {
   read();
 
