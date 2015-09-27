@@ -7,7 +7,6 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/optional.hpp>
 
 namespace lms1xx {
 
@@ -80,7 +79,7 @@ struct scan_data_configuration
 /*------------------------------------------------------------------------------------------------*/
 
 /// @brief Structure containing single scan message.
-struct scanData
+struct scan_data
 {
 
 	/// @brief Number of samples in dist1.
@@ -237,7 +236,7 @@ public:
   scan_continous(bool start);
 
 	/// @brief Receive single scan message
-	boost::optional<scanData>
+  scan_data
   getData();
 
 	/// @brief Save data permanently

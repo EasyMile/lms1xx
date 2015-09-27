@@ -293,7 +293,7 @@ LMS1xx::scan_continous(bool start)
 
 /*------------------------------------------------------------------------------------------------*/
 
-boost::optional<scanData>
+scan_data
 LMS1xx::getData()
 {
   read();
@@ -336,9 +336,9 @@ LMS1xx::getData()
 	int NumberChannels16Bit;
 	sscanf(tok, "%d", &NumberChannels16Bit);
 
-  auto data = scanData{};
+  auto data = scan_data{};
 
-  for (int i = 0; i < NumberChannels16Bit; i++)
+  for (auto i = 0; i < NumberChannels16Bit; ++i)
   {
 		int type = -1; // 0 DIST1 1 DIST2 2 RSSI1 3 RSSI2
 		char content[6];
