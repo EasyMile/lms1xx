@@ -1,22 +1,57 @@
-# The name of our project is "HELLO". CMakeLists files in this project can 
-# refer to the root source directory of the project as ${HELLO_SOURCE_DIR} and 
-# to the root binary directory of the project as ${HELLO_BINARY_DIR}. 
-cmake_minimum_required (VERSION 2.6) 
-project (libLMS1xx)
+cmake_minimum_required (VERSION 2.8.9)
 
-OPTION( BUILD_static "Build static library" OFF )
+#--------------------------------------------------------------------------------------------------#
+
+project (liblms1xx)
+
+#--------------------------------------------------------------------------------------------------#
+
+include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+if(NOT COMPILER_SUPPORTS_CXX11)
+  message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support.")
+endif ()
+
+#--------------------------------------------------------------------------------------------------#
+
 OPTION( BUILD_test "Build test application" OFF )
 
-if( BUILD_static )
-add_library (LMS1xx STATIC LMS1xx.cpp)
-else( BUILD_static )
-add_library (LMS1xx SHARED LMS1xx.cpp)
-endif( BUILD_static )
+find_package(Boost 1.54.0 REQUIRED COMPONENTS system)
 
-if( BUILD_test )
-add_executable ( test test.cpp )
-target_link_libraries ( test LMS1xx )
-endif( BUILD_test )
+if (NOT Boost_FOUND)
+  message(FATAL_ERROR "Boost not found")
+endif ()
 
-install( TARGETS LMS1xx LIBRARY DESTINATION lib )
-install( FILES LMS1xx.h DESTINATION include )
+message("-- Boost Include: ${Boost_INCLUDE_DIR}")
+message("-- Boost Libraries: ${Boost_LIBRARY_DIRS}")
+
+#--------------------------------------------------------------------------------------------------#
+
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -std=c++11 ${CMAKE_CXX_FLAGS}")
+
+#--------------------------------------------------------------------------------------------------#
+
+include_directories(SYSTEM "${Boost_INCLUDE_DIRS}")
+include_directories("${PROJECT_SOURCE_DIR}")
+
+#--------------------------------------------------------------------------------------------------#
+
+add_library(lms1xx STATIC ${PROJECT_SOURCE_DIR}/lms1xx/lms1xx.cc)
+target_link_libraries(lms1xx ${Boost_LIBRARIES})
+
+#--------------------------------------------------------------------------------------------------#
+
+install(TARGETS lms1xx DESTINATION lib)
+install(
+  DIRECTORY ${PROJECT_SOURCE_DIR}/lms1xx DESTINATION include
+  FILES_MATCHING PATTERN "*.hh"
+)
+
+#--------------------------------------------------------------------------------------------------#
+
+if (BUILD_test)
+  add_executable(test_run "${PROJECT_SOURCE_DIR}/test/test_run.cc")
+  target_link_libraries(test_run lms1xx ${Boost_LIBRARIES})
+endif ()
+
+#--------------------------------------------------------------------------------------------------#
