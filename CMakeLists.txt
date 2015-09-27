@@ -16,7 +16,10 @@ endif ()
 
 OPTION( BUILD_test "Build test application" OFF )
 
-find_package(Boost 1.54.0 REQUIRED COMPONENTS system)
+#--------------------------------------------------------------------------------------------------#
+
+find_package(Threads)
+find_package(Boost 1.54.0 REQUIRED COMPONENTS system thread)
 
 if (NOT Boost_FOUND)
   message(FATAL_ERROR "Boost not found")
@@ -51,7 +54,7 @@ install(
 
 if (BUILD_test)
   add_executable(test_run "${PROJECT_SOURCE_DIR}/test/test_run.cc")
-  target_link_libraries(test_run lms1xx ${Boost_LIBRARIES})
+  target_link_libraries(test_run lms1xx ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 endif ()
 
 #--------------------------------------------------------------------------------------------------#
