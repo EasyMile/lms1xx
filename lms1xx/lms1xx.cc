@@ -236,20 +236,27 @@ scan_configuration
 LMS1xx::get_configuration()
 {
   write(build("sRN", space, "LMPscancfg"));
-
   read();
-  auto cfg = scan_configuration{};
+
+  auto scaning_frequency = unsigned{};
+  auto angle_resolution = unsigned{};
+  auto start_angle = unsigned{};
+  auto stop_angle = unsigned{};
+
   /// @todo Check if parsing went OK
   std::istream{&m_buffer}
     >> _
     >> _
-    >> std::hex >> cfg.scaning_frequency
+    >> std::hex >> scaning_frequency
     >> _
-    >> std::hex >> cfg.angle_resolution
-    >> std::hex >> cfg.start_angle
-    >> std::hex >> cfg.stop_angle;
+    >> std::hex >> angle_resolution
+    >> std::hex >> start_angle
+    >> std::hex >> stop_angle;
 
-	return cfg;
+	return { static_cast<int>(scaning_frequency)
+         , static_cast<int>(angle_resolution)
+         , static_cast<int>(start_angle)
+         , static_cast<int>(stop_angle)};
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -289,19 +296,24 @@ scan_output_range
 LMS1xx::get_scan_output_range()
 {
   write(build("sRN", space, "LMPoutputRange"));
-
   read();
-  auto range = scan_output_range{};
+
+  auto angle_resolution = unsigned{};
+  auto start_angle = unsigned{};
+  auto stop_angle = unsigned{};  
+
   /// @todo Check if parsing went OK
   std::istream{&m_buffer}
     >> _
     >> _
     >> _
-    >> std::hex >> range.angle_resolution
-    >> std::hex >> range.start_angle
-    >> std::hex >> range.stop_angle;
+    >> std::hex >> angle_resolution
+    >> std::hex >> start_angle
+    >> std::hex >> stop_angle;
 
-  return range;
+  return { static_cast<int>(angle_resolution)
+         , static_cast<int>(start_angle)
+         , static_cast<int>(stop_angle)};
 }
 
 /*------------------------------------------------------------------------------------------------*/
