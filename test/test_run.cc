@@ -77,6 +77,5 @@ main()
     std::cerr << "An error happened: " << e.what() << '\n';
     return 1;
   }
-
-	return 0;
+  return 0;
 }
