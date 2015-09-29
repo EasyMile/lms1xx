@@ -96,12 +96,12 @@ LMS1xx::~LMS1xx()
 void
 LMS1xx::connect(const std::string& host, const std::string& port)
 {
-	if (not m_connected)
+  if (not m_connected)
   {
     boost::asio::ip::tcp::resolver resolver{m_io};
     boost::asio::connect(m_socket, resolver.resolve({host, port}));
     m_connected = true;
-	}
+  }
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -109,11 +109,11 @@ LMS1xx::connect(const std::string& host, const std::string& port)
 void
 LMS1xx::disconnect()
 {
-	if (m_connected)
+  if (m_connected)
   {
-		m_socket.close();
-		m_connected = false;
-	}
+    m_socket.close();
+    m_connected = false;
+  }
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -122,7 +122,7 @@ bool
 LMS1xx::connected()
 const noexcept
 {
-	return m_connected;
+  return m_connected;
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -253,7 +253,7 @@ LMS1xx::get_configuration()
     >> std::hex >> start_angle
     >> std::hex >> stop_angle;
 
-	return { static_cast<int>(scaning_frequency)
+  return { static_cast<int>(scaning_frequency)
          , static_cast<int>(angle_resolution)
          , static_cast<int>(start_angle)
          , static_cast<int>(stop_angle)};
@@ -280,11 +280,11 @@ void
 LMS1xx::set_scan_data_configuration(const scan_data_configuration& cfg)
 {
   /// @todo Use build
-	char buf[512];
-	sprintf(buf, "%c%s %02X 00 %d %d 0 %02X 00 %d %d 0 %d +%d%c", telegram_start,
-			"sWN LMDscandatacfg", cfg.output_channel, cfg.remission ? 1 : 0,
-			cfg.resolution, cfg.encoder, cfg.position ? 1 : 0,
-			cfg.device_name ? 1 : 0, cfg.timestamp ? 1 : 0, cfg.output_interval, telegram_end);
+  char buf[512];
+  sprintf(buf, "%c%s %02X 00 %d %d 0 %02X 00 %d %d 0 %d +%d%c", telegram_start,
+      "sWN LMDscandatacfg", cfg.output_channel, cfg.remission ? 1 : 0,
+      cfg.resolution, cfg.encoder, cfg.position ? 1 : 0,
+      cfg.device_name ? 1 : 0, cfg.timestamp ? 1 : 0, cfg.output_interval, telegram_end);
 
   write(buf, strlen(buf));
   read();
@@ -339,157 +339,157 @@ LMS1xx::get_data()
   buf[sz - 1] = '\0';
 
   /// @todo Rewrite parsing
-	char* tok = strtok(buf.get(), " "); //Type of command
-	tok = strtok(NULL, " "); //Command
-	tok = strtok(NULL, " "); //VersionNumber
-	tok = strtok(NULL, " "); //DeviceNumber
-	tok = strtok(NULL, " "); //Serial number
-	tok = strtok(NULL, " "); //DeviceStatus
-	tok = strtok(NULL, " "); //MessageCounter
-	tok = strtok(NULL, " "); //ScanCounter
-	tok = strtok(NULL, " "); //PowerUpDuration
-	tok = strtok(NULL, " "); //TransmissionDuration
-	tok = strtok(NULL, " "); //InputStatus
-	tok = strtok(NULL, " "); //OutputStatus
-	tok = strtok(NULL, " "); //ReservedByteA
-	tok = strtok(NULL, " "); //ScanningFrequency
-	tok = strtok(NULL, " "); //MeasurementFrequency
-	tok = strtok(NULL, " ");
-	tok = strtok(NULL, " ");
-	tok = strtok(NULL, " ");
-	tok = strtok(NULL, " "); //NumberEncoders
-	int NumberEncoders;
-	sscanf(tok, "%d", &NumberEncoders);
+  char* tok = strtok(buf.get(), " "); //Type of command
+  tok = strtok(NULL, " "); //Command
+  tok = strtok(NULL, " "); //VersionNumber
+  tok = strtok(NULL, " "); //DeviceNumber
+  tok = strtok(NULL, " "); //Serial number
+  tok = strtok(NULL, " "); //DeviceStatus
+  tok = strtok(NULL, " "); //MessageCounter
+  tok = strtok(NULL, " "); //ScanCounter
+  tok = strtok(NULL, " "); //PowerUpDuration
+  tok = strtok(NULL, " "); //TransmissionDuration
+  tok = strtok(NULL, " "); //InputStatus
+  tok = strtok(NULL, " "); //OutputStatus
+  tok = strtok(NULL, " "); //ReservedByteA
+  tok = strtok(NULL, " "); //ScanningFrequency
+  tok = strtok(NULL, " "); //MeasurementFrequency
+  tok = strtok(NULL, " ");
+  tok = strtok(NULL, " ");
+  tok = strtok(NULL, " ");
+  tok = strtok(NULL, " "); //NumberEncoders
+  int NumberEncoders;
+  sscanf(tok, "%d", &NumberEncoders);
 
   for (auto i = 0; i < NumberEncoders; ++i)
   {
-		tok = strtok(NULL, " "); //EncoderPosition
-		tok = strtok(NULL, " "); //EncoderSpeed
-	}
+    tok = strtok(NULL, " "); //EncoderPosition
+    tok = strtok(NULL, " "); //EncoderSpeed
+  }
 
-	tok = strtok(NULL, " "); //NumberChannels16Bit
-	int NumberChannels16Bit;
-	sscanf(tok, "%d", &NumberChannels16Bit);
+  tok = strtok(NULL, " "); //NumberChannels16Bit
+  int NumberChannels16Bit;
+  sscanf(tok, "%d", &NumberChannels16Bit);
 
   auto data = scan_data{};
 
   for (auto i = 0; i < NumberChannels16Bit; ++i)
   {
-		int type = -1; // 0 DIST1 1 DIST2 2 RSSI1 3 RSSI2
-		char content[6];
-		tok = strtok(NULL, " "); //MeasuredDataContent
-		sscanf(tok, "%s", content);
-		if (!strcmp(content, "DIST1"))
+    int type = -1; // 0 DIST1 1 DIST2 2 RSSI1 3 RSSI2
+    char content[6];
+    tok = strtok(NULL, " "); //MeasuredDataContent
+    sscanf(tok, "%s", content);
+    if (!strcmp(content, "DIST1"))
     {
-			type = 0;
-		}
+      type = 0;
+    }
     else if (!strcmp(content, "DIST2"))
     {
-			type = 1;
-		}
+      type = 1;
+    }
     else if (!strcmp(content, "RSSI1"))
     {
-			type = 2;
-		}
+      type = 2;
+    }
     else if (!strcmp(content, "RSSI2"))
     {
-			type = 3;
-		}
-		tok = strtok(NULL, " "); //ScalingFactor
-		tok = strtok(NULL, " "); //ScalingOffset
-		tok = strtok(NULL, " "); //Starting angle
-		tok = strtok(NULL, " "); //Angular step width
-		tok = strtok(NULL, " "); //NumberData
-		int NumberData;
-		sscanf(tok, "%X", &NumberData);
+      type = 3;
+    }
+    tok = strtok(NULL, " "); //ScalingFactor
+    tok = strtok(NULL, " "); //ScalingOffset
+    tok = strtok(NULL, " "); //Starting angle
+    tok = strtok(NULL, " "); //Angular step width
+    tok = strtok(NULL, " "); //NumberData
+    int NumberData;
+    sscanf(tok, "%X", &NumberData);
 
-		if (type == 0)
+    if (type == 0)
     {
-			data.dist_len1 = NumberData;
-		}
+      data.dist_len1 = NumberData;
+    }
     else if (type == 1)
     {
-			data.dist_len2 = NumberData;
-		}
+      data.dist_len2 = NumberData;
+    }
     else if (type == 2)
     {
-			data.rssi_len1 = NumberData;
-		}
+      data.rssi_len1 = NumberData;
+    }
     else if (type == 3)
     {
-			data.rssi_len2 = NumberData;
-		}
+      data.rssi_len2 = NumberData;
+    }
 
-		for (auto i = 0; i < NumberData; ++i)
+    for (auto i = 0; i < NumberData; ++i)
     {
       char* end;
-			tok = strtok(NULL, " "); //data
+      tok = strtok(NULL, " "); //data
       const auto dat = ::strtol(tok, &end, 16);
 
-			if (type == 0) {
-				data.dist1[i] = dat;
-			} else if (type == 1) {
-				data.dist2[i] = dat;
-			} else if (type == 2) {
-				data.rssi1[i] = dat;
-			} else if (type == 3) {
-				data.rssi2[i] = dat;
-			}
+      if (type == 0) {
+        data.dist1[i] = dat;
+      } else if (type == 1) {
+        data.dist2[i] = dat;
+      } else if (type == 2) {
+        data.rssi1[i] = dat;
+      } else if (type == 3) {
+        data.rssi2[i] = dat;
+      }
 
-		}
-	}
+    }
+  }
 
-	tok = strtok(NULL, " "); //NumberChannels8Bit
-	int NumberChannels8Bit;
-	sscanf(tok, "%d", &NumberChannels8Bit);
+  tok = strtok(NULL, " "); //NumberChannels8Bit
+  int NumberChannels8Bit;
+  sscanf(tok, "%d", &NumberChannels8Bit);
 
   for (int i = 0; i < NumberChannels8Bit; i++) {
-		int type = -1;
-		char content[6];
-		tok = strtok(NULL, " "); //MeasuredDataContent
-		sscanf(tok, "%s", content);
-		if (!strcmp(content, "DIST1")) {
-			type = 0;
-		} else if (!strcmp(content, "DIST2")) {
-			type = 1;
-		} else if (!strcmp(content, "RSSI1")) {
-			type = 2;
-		} else if (!strcmp(content, "RSSI2")) {
-			type = 3;
-		}
-		tok = strtok(NULL, " "); //ScalingFactor
-		tok = strtok(NULL, " "); //ScalingOffset
-		tok = strtok(NULL, " "); //Starting angle
-		tok = strtok(NULL, " "); //Angular step width
-		tok = strtok(NULL, " "); //NumberData
-		int NumberData;
-		sscanf(tok, "%X", &NumberData);
+    int type = -1;
+    char content[6];
+    tok = strtok(NULL, " "); //MeasuredDataContent
+    sscanf(tok, "%s", content);
+    if (!strcmp(content, "DIST1")) {
+      type = 0;
+    } else if (!strcmp(content, "DIST2")) {
+      type = 1;
+    } else if (!strcmp(content, "RSSI1")) {
+      type = 2;
+    } else if (!strcmp(content, "RSSI2")) {
+      type = 3;
+    }
+    tok = strtok(NULL, " "); //ScalingFactor
+    tok = strtok(NULL, " "); //ScalingOffset
+    tok = strtok(NULL, " "); //Starting angle
+    tok = strtok(NULL, " "); //Angular step width
+    tok = strtok(NULL, " "); //NumberData
+    int NumberData;
+    sscanf(tok, "%X", &NumberData);
 
-		if (type == 0) {
-			data.dist_len1 = NumberData;
-		} else if (type == 1) {
-			data.dist_len2 = NumberData;
-		} else if (type == 2) {
-			data.rssi_len1 = NumberData;
-		} else if (type == 3) {
-			data.rssi_len2 = NumberData;
-		}
-		for (int i = 0; i < NumberData; i++) {
-			int dat;
-			tok = strtok(NULL, " "); //data
-			sscanf(tok, "%X", &dat);
+    if (type == 0) {
+      data.dist_len1 = NumberData;
+    } else if (type == 1) {
+      data.dist_len2 = NumberData;
+    } else if (type == 2) {
+      data.rssi_len1 = NumberData;
+    } else if (type == 3) {
+      data.rssi_len2 = NumberData;
+    }
+    for (int i = 0; i < NumberData; i++) {
+      int dat;
+      tok = strtok(NULL, " "); //data
+      sscanf(tok, "%X", &dat);
 
-			if (type == 0) {
-				data.dist1[i] = dat;
-			} else if (type == 1) {
-				data.dist2[i] = dat;
-			} else if (type == 2) {
-				data.rssi1[i] = dat;
-			} else if (type == 3) {
-				data.rssi2[i] = dat;
-			}
-		}
-	}
+      if (type == 0) {
+        data.dist1[i] = dat;
+      } else if (type == 1) {
+        data.dist2[i] = dat;
+      } else if (type == 2) {
+        data.rssi1[i] = dat;
+      } else if (type == 3) {
+        data.rssi2[i] = dat;
+      }
+    }
+  }
 
   return data;
 }

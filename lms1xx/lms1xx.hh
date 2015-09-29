@@ -15,24 +15,24 @@ namespace lms1xx {
 /// @brief Structure containing scan configuration
 struct scan_configuration
 {
-	/// @brief Scanning frequency
+  /// @brief Scanning frequency
   ///
   /// From 1 to 100 Hz
-	int scaning_frequency;
+  int scaning_frequency;
 
-	/// @brief Scanning resolution
+  /// @brief Scanning resolution
   ///
   /// 1/10000 degree
-	int angle_resolution;
+  int angle_resolution;
 
-	/// @brief Start angle
+  /// @brief Start angle
   ///
   /// 1/10000 degree
-	int start_angle;
+  int start_angle;
 
-	/// @brief Stop angle
+  /// @brief Stop angle
   /// 1/10000 degree
-	int stop_angle;
+  int stop_angle;
 };
 
 /*------------------------------------------------------------------------------------------------*/
@@ -40,36 +40,36 @@ struct scan_configuration
 /// @brief Structure containing scan data configuration
 struct scan_data_configuration
 {
-	/// @brief Output channels
+  /// @brief Output channels
   ///
   /// Defines which output channel is activated.
-	int output_channel;
+  int output_channel;
 
-	//// @brief Remission
+  //// @brief Remission
   ///
   /// Defines whether remission values are output.
-	bool remission;
+  bool remission;
 
   /// @brief Remission resolution
   ///
   /// Defines whether the remission values are output with 8-bit or 16bit resolution.
-	int resolution;
+  int resolution;
 
   /// @brief Encoders channels
   ///
   /// Defines which output channel is activated.
-	int encoder;
+  int encoder;
 
   /// @brief Position
   ///
   /// Defines whether position values are output.
-	bool position;
+  bool position;
 
   /// @brief Device name
   /// Determines whether the device name is to be output
-	bool device_name;
+  bool device_name;
 
-	bool timestamp;
+  bool timestamp;
 
   /// Output interval
   /// Defines which scan is output (1 for 1st, 2 for 2nd, up to 50000).
@@ -81,29 +81,29 @@ struct scan_data_configuration
 /// @brief Structure containing single scan message.
 struct scan_data
 {
-	/// @brief Number of samples in dist1.
-	int dist_len1;
+  /// @brief Number of samples in dist1.
+  int dist_len1;
 
-	/// @brief Radial distance for the first reflected pulse
-	uint16_t dist1[1082];
+  /// @brief Radial distance for the first reflected pulse
+  uint16_t dist1[1082];
 
-	/// @brief Number of samples in dist2.
-	int dist_len2;
+  /// @brief Number of samples in dist2.
+  int dist_len2;
 
-	/// @brief Radial distance for the second reflected pulse
-	uint16_t dist2[1082];
+  /// @brief Radial distance for the second reflected pulse
+  uint16_t dist2[1082];
 
-	/// @brief Number of samples in rssi1.
-	int rssi_len1;
+  /// @brief Number of samples in rssi1.
+  int rssi_len1;
 
-	/// @brief Remission values for the first reflected pulse
-	uint16_t rssi1[1082];
+  /// @brief Remission values for the first reflected pulse
+  uint16_t rssi1[1082];
 
-	/// @brief Number of samples in rssi2.
-	int rssi_len2;
+  /// @brief Number of samples in rssi2.
+  int rssi_len2;
 
-	/// @brief Remission values for the second reflected pulse
-	uint16_t rssi2[1082];
+  /// @brief Remission values for the second reflected pulse
+  uint16_t rssi2[1082];
 };
 
 /*------------------------------------------------------------------------------------------------*/
@@ -111,14 +111,14 @@ struct scan_data
 /// @brief Structure containing scan output range configuration
 struct scan_output_range
 {
-	/// @brief Scanning resolution in 1/10000 degree
-	int angle_resolution;
+  /// @brief Scanning resolution in 1/10000 degree
+  int angle_resolution;
 
-	/// @brief Start angle in 1/10000 degree
-	int start_angle;
+  /// @brief Start angle in 1/10000 degree
+  int start_angle;
 
-	/// @brief Stop angle in 1/10000 degree
-	int stop_angle;
+  /// @brief Stop angle in 1/10000 degree
+  int stop_angle;
 };
 
 /*------------------------------------------------------------------------------------------------*/
@@ -183,92 +183,92 @@ public:
   /// Disconnect from device.
   ~LMS1xx();
 
-	/// @brief Connect to LMS1xx
-	/// @param host LMS1xx host name or ip address
-	/// @param port LMS1xx port number
+  /// @brief Connect to LMS1xx
+  /// @param host LMS1xx host name or ip address
+  /// @param port LMS1xx port number
   /// @note Does nothing if the device is already connected
-	void
+  void
   connect(const std::string& host, const std::string& port);
 
-	/// @brief Disconnect from LMS1xx device
-	void
+  /// @brief Disconnect from LMS1xx device
+  void
   disconnect();
 
-	/// @brief Get status of connection
-	/// @returns connected or not.
-	bool
+  /// @brief Get status of connection
+  /// @returns connected or not.
+  bool
   connected()
   const noexcept;
 
-	/// @brief Start measurements
+  /// @brief Start measurements
   ///
-	/// After receiving this command LMS1xx unit starts spinning laser and measuring.
-	void
+  /// After receiving this command LMS1xx unit starts spinning laser and measuring.
+  void
   start_measurements();
 
-	/// @brief Stop measurements
+  /// @brief Stop measurements
   ///
   /// After receiving this command LMS1xx unit stop spinning laser and measuring.
-	void stop_measurements();
+  void stop_measurements();
 
-	/// @brief Get current status of LMS1xx device
-	device_status
+  /// @brief Get current status of LMS1xx device
+  device_status
   status();
 
-	/// @brief Log into LMS1xx unit.
+  /// @brief Log into LMS1xx unit.
   ///
-	/// Increase privilege level, giving ability to change device configuration.
-	void login();
+  /// Increase privilege level, giving ability to change device configuration.
+  void login();
 
-	/// @brief Get current scan configuration
+  /// @brief Get current scan configuration
   ///
-	/// Get scan configuration :
-	/// - scanning frequency.
-	/// - scanning resolution.
-	/// - start angle.
-	/// - stop angle.
-	scan_configuration
+  /// Get scan configuration :
+  /// - scanning frequency.
+  /// - scanning resolution.
+  /// - start angle.
+  /// - stop angle.
+  scan_configuration
   get_configuration();
 
-	/// @brief Set scan configuration
+  /// @brief Set scan configuration
   ///
-	/// Get scan configuration :
-	/// - scanning frequency.
-	/// - scanning resolution.
-	/// - start angle.
-	/// - stop angle.
-	void
+  /// Get scan configuration :
+  /// - scanning frequency.
+  /// - scanning resolution.
+  /// - start angle.
+  /// - stop angle.
+  void
   set_scan_configuration(const scan_configuration &cfg);
 
-	/// @brief Set scan data configuration
+  /// @brief Set scan data configuration
   ///
   /// Set format of scan message returned by device.
-	void
+  void
   set_scan_data_configuration(const scan_data_configuration &cfg);
 
   /// @brief Get current output range configuration
   scan_output_range
   get_scan_output_range();
 
-	/// @brief Start or stop continuous data acquisition
+  /// @brief Start or stop continuous data acquisition
   ///
-	/// After reception of this command device start or stop continuous data stream containing scan
+  /// After reception of this command device start or stop continuous data stream containing scan
   /// messages.
-	void
+  void
   scan_continous(bool start);
 
-	/// @brief Receive single scan message
+  /// @brief Receive single scan message
   scan_data
   get_data();
 
-	/// @brief Save data permanently
-	/// Parameters are saved in the EEPROM of the LMS and will also be available after the device is
+  /// @brief Save data permanently
+  /// Parameters are saved in the EEPROM of the LMS and will also be available after the device is
   /// switched off and on again.
-	void
+  void
   save_configuration();
 
-	/// @brief The device is returned to the measurement mode after configuration
-	void
+  /// @brief The device is returned to the measurement mode after configuration
+  void
   start_device();
 
 private:
