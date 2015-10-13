@@ -6,6 +6,10 @@ Authors:
   Konrad Banachowicz
   Alexandre Hamez
 
+=== Requirements
+- A C++11 compiler
+- Boost.Asio
+
 === Build instructions
 
 mkdir build
