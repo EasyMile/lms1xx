@@ -339,32 +339,34 @@ LMS1xx::get_data()
   buf[sz - 1] = '\0';
 
   /// @todo Rewrite parsing
-  char* tok = strtok(buf.get(), " "); //Type of command
-  tok = strtok(NULL, " "); //Command
-  tok = strtok(NULL, " "); //VersionNumber
-  tok = strtok(NULL, " "); //DeviceNumber
-  tok = strtok(NULL, " "); //Serial number
-  tok = strtok(NULL, " "); //DeviceStatus
-  tok = strtok(NULL, " "); //MessageCounter
-  tok = strtok(NULL, " "); //ScanCounter
-  tok = strtok(NULL, " "); //PowerUpDuration
-  tok = strtok(NULL, " "); //TransmissionDuration
-  tok = strtok(NULL, " "); //InputStatus
-  tok = strtok(NULL, " "); //OutputStatus
-  tok = strtok(NULL, " "); //ReservedByteA
-  tok = strtok(NULL, " "); //ScanningFrequency
-  tok = strtok(NULL, " "); //MeasurementFrequency
-  tok = strtok(NULL, " ");
-  tok = strtok(NULL, " ");
-  tok = strtok(NULL, " ");
+  char* tok;
+
+  strtok(buf.get(), " "); //Type of command
+  strtok(NULL, " "); //Command
+  strtok(NULL, " "); //VersionNumber
+  strtok(NULL, " "); //DeviceNumber
+  strtok(NULL, " "); //Serial number
+  strtok(NULL, " "); //DeviceStatus
+  strtok(NULL, " "); //MessageCounter
+  strtok(NULL, " "); //ScanCounter
+  strtok(NULL, " "); //PowerUpDuration
+  strtok(NULL, " "); //TransmissionDuration
+  strtok(NULL, " "); //InputStatus
+  strtok(NULL, " "); //OutputStatus
+  strtok(NULL, " "); //ReservedByteA
+  strtok(NULL, " "); //ScanningFrequency
+  strtok(NULL, " "); //MeasurementFrequency
+  strtok(NULL, " ");
+  strtok(NULL, " ");
+  strtok(NULL, " ");
   tok = strtok(NULL, " "); //NumberEncoders
   int NumberEncoders;
   sscanf(tok, "%d", &NumberEncoders);
 
   for (auto i = 0; i < NumberEncoders; ++i)
   {
-    tok = strtok(NULL, " "); //EncoderPosition
-    tok = strtok(NULL, " "); //EncoderSpeed
+    strtok(NULL, " "); //EncoderPosition
+    strtok(NULL, " "); //EncoderSpeed
   }
 
   tok = strtok(NULL, " "); //NumberChannels16Bit
@@ -395,10 +397,10 @@ LMS1xx::get_data()
     {
       type = 3;
     }
-    tok = strtok(NULL, " "); //ScalingFactor
-    tok = strtok(NULL, " "); //ScalingOffset
-    tok = strtok(NULL, " "); //Starting angle
-    tok = strtok(NULL, " "); //Angular step width
+    strtok(NULL, " "); //ScalingFactor
+    strtok(NULL, " "); //ScalingOffset
+    strtok(NULL, " "); //Starting angle
+    strtok(NULL, " "); //Angular step width
     tok = strtok(NULL, " "); //NumberData
     int NumberData;
     sscanf(tok, "%X", &NumberData);
@@ -457,10 +459,10 @@ LMS1xx::get_data()
     } else if (!strcmp(content, "RSSI2")) {
       type = 3;
     }
-    tok = strtok(NULL, " "); //ScalingFactor
-    tok = strtok(NULL, " "); //ScalingOffset
-    tok = strtok(NULL, " "); //Starting angle
-    tok = strtok(NULL, " "); //Angular step width
+    strtok(NULL, " "); //ScalingFactor
+    strtok(NULL, " "); //ScalingOffset
+    strtok(NULL, " "); //Starting angle
+    strtok(NULL, " "); //Angular step width
     tok = strtok(NULL, " "); //NumberData
     int NumberData;
     sscanf(tok, "%X", &NumberData);
